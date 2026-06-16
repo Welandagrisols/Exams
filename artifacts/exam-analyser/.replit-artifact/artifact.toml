@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "JSS Exam Analyser"
+version = "1.0.0"
+id = "artifacts/exam-analyser"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21653
+
+[services.development]
+run = "pnpm --filter @workspace/exam-analyser run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/exam-analyser", "run", "build" ]
+publicDir = "artifacts/exam-analyser/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21653"
+BASE_PATH = "/"

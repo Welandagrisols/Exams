@@ -1,22 +1,29 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: JSS Exam Analyser API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: school
+  - name: classes
+  - name: students
+  - name: learningAreas
+  - name: exams
+  - name: scores
+  - name: reports
+  - name: rankings
+  - name: analytics
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +31,963 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /school:
+    get:
+      operationId: getSchool
+      tags: [school]
+      summary: Get school settings
+      responses:
+        "200":
+          description: School info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+    patch:
+      operationId: updateSchool
+      tags: [school]
+      summary: Update school settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List all classes
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Class"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{id}:
+    get:
+      operationId: getClass
+      tags: [classes]
+      summary: Get a class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+    patch:
+      operationId: updateClass
+      tags: [classes]
+      summary: Update a class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+    delete:
+      operationId: deleteClass
+      tags: [classes]
+      summary: Delete a class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List students, optionally filtered by class
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Create a student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /learning-areas:
+    get:
+      operationId: listLearningAreas
+      tags: [learningAreas]
+      summary: List all learning areas
+      responses:
+        "200":
+          description: List of learning areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LearningArea"
+    post:
+      operationId: createLearningArea
+      tags: [learningAreas]
+      summary: Create a learning area
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningAreaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningArea"
+
+  /learning-areas/{id}:
+    patch:
+      operationId: updateLearningArea
+      tags: [learningAreas]
+      summary: Update a learning area
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningAreaUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningArea"
+    delete:
+      operationId: deleteLearningArea
+      tags: [learningAreas]
+      summary: Delete a learning area
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /exams:
+    get:
+      operationId: listExams
+      tags: [exams]
+      summary: List exams, optionally filtered by class
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of exams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exam"
+    post:
+      operationId: createExam
+      tags: [exams]
+      summary: Create an exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+
+  /exams/{id}:
+    get:
+      operationId: getExam
+      tags: [exams]
+      summary: Get an exam
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+    patch:
+      operationId: updateExam
+      tags: [exams]
+      summary: Update an exam
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+    delete:
+      operationId: deleteExam
+      tags: [exams]
+      summary: Delete an exam
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /scores:
+    get:
+      operationId: listScores
+      tags: [scores]
+      summary: List scores for a given exam (and optionally a student)
+      parameters:
+        - name: examId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Score"
+    post:
+      operationId: upsertScores
+      tags: [scores]
+      summary: Upsert scores in bulk (for a student in an exam)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreBulkInput"
+      responses:
+        "200":
+          description: Upserted scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Score"
+
+  /reports/{examId}/{studentId}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get full report for a student in an exam
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentReport"
+    patch:
+      operationId: updateReport
+      tags: [reports]
+      summary: Update comments on a student report
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCommentInput"
+      responses:
+        "200":
+          description: Updated report comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentReport"
+
+  /rankings/{examId}:
+    get:
+      operationId: getRankings
+      tags: [rankings]
+      summary: Get class rankings for an exam
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ranked list of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankedStudent"
+
+  /analytics/{examId}:
+    get:
+      operationId: getAnalytics
+      tags: [analytics]
+      summary: Get exam analytics — means, rubric distributions per learning area
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamAnalytics"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [analytics]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    School:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: ["string", "null"]
+        motto:
+          type: ["string", "null"]
+        principalName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+
+    SchoolInput:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        motto:
+          type: string
+        principalName:
+          type: string
+
+    Class:
+      type: object
+      required: [id, name, year, term]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        year:
+          type: integer
+        term:
+          type: integer
+        classTeacherName:
+          type: ["string", "null"]
+        studentCount:
+          type: integer
+
+    ClassInput:
+      type: object
+      required: [name, year, term]
+      properties:
+        name:
+          type: string
+        year:
+          type: integer
+        term:
+          type: integer
+        classTeacherName:
+          type: string
+
+    ClassUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        year:
+          type: integer
+        term:
+          type: integer
+        classTeacherName:
+          type: string
+
+    Student:
+      type: object
+      required: [id, name, admissionNo, classId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        admissionNo:
+          type: string
+        classId:
+          type: integer
+        className:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+
+    StudentInput:
+      type: object
+      required: [name, admissionNo, classId]
+      properties:
+        name:
+          type: string
+        admissionNo:
+          type: string
+        classId:
+          type: integer
+        gender:
+          type: string
+        dateOfBirth:
+          type: string
+
+    StudentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        admissionNo:
+          type: string
+        classId:
+          type: integer
+        gender:
+          type: string
+        dateOfBirth:
+          type: string
+
+    LearningArea:
+      type: object
+      required: [id, name, abbreviation, maxMarks]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        abbreviation:
+          type: string
+        maxMarks:
+          type: integer
+        sortOrder:
+          type: integer
+
+    LearningAreaInput:
+      type: object
+      required: [name, abbreviation]
+      properties:
+        name:
+          type: string
+        abbreviation:
+          type: string
+        maxMarks:
+          type: integer
+        sortOrder:
+          type: integer
+
+    LearningAreaUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        abbreviation:
+          type: string
+        maxMarks:
+          type: integer
+        sortOrder:
+          type: integer
+
+    Exam:
+      type: object
+      required: [id, name, classId, year, term]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        classId:
+          type: integer
+        className:
+          type: ["string", "null"]
+        year:
+          type: integer
+        term:
+          type: integer
+        openingDate:
+          type: ["string", "null"]
+        closingDate:
+          type: ["string", "null"]
+        status:
+          type: string
+
+    ExamInput:
+      type: object
+      required: [name, classId, year, term]
+      properties:
+        name:
+          type: string
+        classId:
+          type: integer
+        year:
+          type: integer
+        term:
+          type: integer
+        openingDate:
+          type: string
+        closingDate:
+          type: string
+        status:
+          type: string
+
+    ExamUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        openingDate:
+          type: string
+        closingDate:
+          type: string
+        status:
+          type: string
+
+    Score:
+      type: object
+      required: [id, studentId, examId, learningAreaId, marks]
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        examId:
+          type: integer
+        learningAreaId:
+          type: integer
+        learningAreaName:
+          type: ["string", "null"]
+        learningAreaAbbr:
+          type: ["string", "null"]
+        marks:
+          type: number
+        maxMarks:
+          type: integer
+        rubricGrade:
+          type: string
+        rubricPoints:
+          type: number
+
+    ScoreEntry:
+      type: object
+      required: [learningAreaId, marks]
+      properties:
+        learningAreaId:
+          type: integer
+        marks:
+          type: number
+
+    ScoreBulkInput:
+      type: object
+      required: [studentId, examId, scores]
+      properties:
+        studentId:
+          type: integer
+        examId:
+          type: integer
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreEntry"
+
+    SubjectPerformance:
+      type: object
+      required: [learningAreaId, learningAreaName, abbreviation, marks, maxMarks, rubricGrade, rubricPoints, percentage]
+      properties:
+        learningAreaId:
+          type: integer
+        learningAreaName:
+          type: string
+        abbreviation:
+          type: string
+        marks:
+          type: number
+        maxMarks:
+          type: integer
+        rubricGrade:
+          type: string
+        rubricPoints:
+          type: number
+        percentage:
+          type: number
+
+    StudentReport:
+      type: object
+      required: [student, exam, school, subjects, totalMarks, totalMaxMarks, averagePercentage, averagePoints, overallGrade, rank, classSize]
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        exam:
+          $ref: "#/components/schemas/Exam"
+        school:
+          $ref: "#/components/schemas/School"
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectPerformance"
+        totalMarks:
+          type: number
+        totalMaxMarks:
+          type: integer
+        averagePercentage:
+          type: number
+        averagePoints:
+          type: number
+        overallGrade:
+          type: string
+        rank:
+          type: integer
+        classSize:
+          type: integer
+        teacherComment:
+          type: ["string", "null"]
+        principalComment:
+          type: ["string", "null"]
+
+    ReportCommentInput:
+      type: object
+      properties:
+        teacherComment:
+          type: string
+        principalComment:
+          type: string
+
+    RankedStudent:
+      type: object
+      required: [rank, student, totalMarks, totalMaxMarks, averagePercentage, averagePoints, overallGrade]
+      properties:
+        rank:
+          type: integer
+        student:
+          $ref: "#/components/schemas/Student"
+        totalMarks:
+          type: number
+        totalMaxMarks:
+          type: integer
+        averagePercentage:
+          type: number
+        averagePoints:
+          type: number
+        overallGrade:
+          type: string
+        subjectCount:
+          type: integer
+
+    RubricDistribution:
+      type: object
+      required: [EE2, EE1, ME2, ME1, AE2, AE1, BE2, BE1]
+      properties:
+        EE2:
+          type: integer
+        EE1:
+          type: integer
+        ME2:
+          type: integer
+        ME1:
+          type: integer
+        AE2:
+          type: integer
+        AE1:
+          type: integer
+        BE2:
+          type: integer
+        BE1:
+          type: integer
+
+    LearningAreaAnalytics:
+      type: object
+      required: [learningAreaId, learningAreaName, abbreviation, mean, maxMarks, meanPercentage, meanPoints, meanGrade, distribution, highest, lowest]
+      properties:
+        learningAreaId:
+          type: integer
+        learningAreaName:
+          type: string
+        abbreviation:
+          type: string
+        mean:
+          type: number
+        maxMarks:
+          type: integer
+        meanPercentage:
+          type: number
+        meanPoints:
+          type: number
+        meanGrade:
+          type: string
+        distribution:
+          $ref: "#/components/schemas/RubricDistribution"
+        highest:
+          type: number
+        lowest:
+          type: number
+
+    ExamAnalytics:
+      type: object
+      required: [exam, learningAreas, overallMean, overallMeanPercentage, classSize, gradedCount, overallDistribution]
+      properties:
+        exam:
+          $ref: "#/components/schemas/Exam"
+        learningAreas:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningAreaAnalytics"
+        overallMean:
+          type: number
+        overallMeanPercentage:
+          type: number
+        classSize:
+          type: integer
+        gradedCount:
+          type: integer
+        overallDistribution:
+          $ref: "#/components/schemas/RubricDistribution"
+
+    DashboardSummary:
+      type: object
+      required: [totalStudents, totalClasses, totalExams, recentExams, topPerformers]
+      properties:
+        totalStudents:
+          type: integer
+        totalClasses:
+          type: integer
+        totalExams:
+          type: integer
+        recentExams:
+          type: array
+          items:
+            $ref: "#/components/schemas/Exam"
+        topPerformers:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedStudent"
