@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@400..800&display=swap');
+
+.dark-academic-theme {
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --bg-sidebar: #0f172a; /* slate-900 */
+  --bg-main: #020617; /* slate-950 */
+  --bg-card: #1e293b; /* slate-800 */
+  
+  --text-primary: #f8fafc; /* slate-50 */
+  --text-secondary: #94a3b8; /* slate-400 */
+  
+  --accent-gold: #f59e0b; /* amber-500 */
+  --accent-gold-glow: rgba(245, 158, 11, 0.2);
+  
+  --grade-ee2: #f59e0b; /* Gold */
+  --grade-ee1: #d97706; /* Amber */
+  --grade-me2: #3b82f6; /* Blue */
+  --grade-me1: #06b6d4; /* Cyan */
+  --grade-ae: #ef4444;  /* Red */
+  --grade-be: #ef4444;  /* Red */
+}
+
+.da-heading {
+  font-family: var(--font-serif);
+}
+
+.da-mono {
+  font-family: var(--font-mono);
+}
+
+.da-card {
+  background-color: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+.da-badge-ee2 {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.da-badge-ee1 {
+  background-color: rgba(217, 119, 6, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.2);
+}
+
+.da-badge-me2 {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.da-badge-me1 {
+  background-color: rgba(6, 182, 212, 0.15);
+  color: #67e8f9;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.da-nav-item:hover {
+  background: linear-gradient(90deg, rgba(245,158,11,0.1) 0%, transparent 100%);
+  border-left-color: var(--accent-gold);
+}
+
+.da-stat-card {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.da-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+  opacity: 0.5;
+}
