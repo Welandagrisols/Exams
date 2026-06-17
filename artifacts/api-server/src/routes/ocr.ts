@@ -2,11 +2,11 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import { eq } from "drizzle-orm";
 import { db, examsTable, classesTable, studentsTable, learningAreasTable } from "@workspace/db";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
 router.post("/exams/:examId/ocr-upload", upload.single("image"), async (req, res): Promise<void> => {
   const examId = parseInt(req.params.examId);
@@ -66,28 +66,18 @@ Rules:
 - Subject keys must match the subject names exactly as given above`;
 
   const base64Image = req.file.buffer.toString("base64");
-  const mimeType = (req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif") || "image/jpeg";
+  const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: "high" } },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType } },
+    ]);
 
-    const content = response.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content);
+    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(text);
 
-    // Enrich with IDs for the frontend
     const enriched = (parsed.scores ?? []).map((row: any) => {
       const student = students.find(s => s.admissionNo === row.admissionNo || s.name === row.studentName);
       return {
@@ -138,26 +128,17 @@ Rules:
 - Return ONLY the JSON object, no explanation`;
 
   const base64Image = req.file.buffer.toString("base64");
-  const mimeType = (req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif") || "image/jpeg";
+  const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: "high" } },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType } },
+    ]);
 
-    const content = response.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content);
+    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(text);
     res.json(parsed);
   } catch (err: any) {
     res.status(500).json({ error: err.message ?? "OCR processing failed" });

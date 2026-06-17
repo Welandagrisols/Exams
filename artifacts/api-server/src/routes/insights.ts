@@ -1,14 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, examsTable, classesTable, scoresTable, learningAreasTable, studentsTable } from "@workspace/db";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getRubricGrade, getRubricPoints, getOverallGrade } from "../lib/rubric";
 
 const router: IRouter = Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
 router.get("/insights/:examId", async (req, res): Promise<void> => {
   const examId = parseInt(req.params.examId);
@@ -51,7 +49,6 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
     return;
   }
 
-  // Aggregate per subject
   const areaMap = new Map<number, { name: string; marks: number[]; maxMarks: number }>();
   for (const s of allScores) {
     if (!s.learningAreaId) continue;
@@ -70,7 +67,6 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
     return { subject: area.name, meanPct: pct.toFixed(1), grade, studentsBelow: below, total: area.marks.length };
   });
 
-  // Per-student overall grade
   const studentMap = new Map<number, { totalPts: number; count: number }>();
   for (const s of allScores) {
     const m = parseFloat(s.marks as unknown as string);
@@ -127,15 +123,11 @@ Be direct, specific, and practical. Use simple English suitable for Kenyan teach
   res.setHeader("Connection", "keep-alive");
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 800,
-      messages: [{ role: "user", content: prompt }],
-      stream: true,
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const streamResult = await model.generateContentStream(prompt);
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
+    for await (const chunk of streamResult.stream) {
+      const content = chunk.text();
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
