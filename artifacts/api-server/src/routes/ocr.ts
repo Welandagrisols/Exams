@@ -145,4 +145,76 @@ Rules:
   }
 });
 
+router.post("/ocr/fee-arrears", upload.single("image"), async (req, res): Promise<void> => {
+  if (!req.file) {
+    res.status(400).json({ error: "Image file is required" });
+    return;
+  }
+
+  const allStudents = await db
+    .select({ id: studentsTable.id, name: studentsTable.name, admissionNo: studentsTable.admissionNo })
+    .from(studentsTable)
+    .orderBy(studentsTable.name);
+
+  const prompt = `You are reading a school fee statement, fee balance sheet, or fee ledger from a Kenyan school.
+
+Extract all student fee arrears/balance entries from the image. Return ONLY a valid JSON object:
+{
+  "entries": [
+    { "studentName": "FULL NAME", "admissionNo": "admission/roll number or empty string", "balance": "amount as plain number e.g. 5000" },
+    ...
+  ]
+}
+
+Rules:
+- Extract ALL rows that have a non-zero outstanding balance or arrear
+- studentName: full name as written in the document (uppercase preferred)
+- admissionNo: the admission/registration/roll number if shown, else empty string ""
+- balance: outstanding balance as a plain number without currency symbols or commas (e.g. "5000" not "Ksh 5,000")
+- Skip any student whose balance is zero or nil
+- Return ONLY the JSON object, no explanation`;
+
+  const base64Image = req.file.buffer.toString("base64");
+  const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType } },
+    ]);
+
+    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(text);
+
+    const entries = (parsed.entries ?? []).map((entry: any) => {
+      let student = allStudents.find(s =>
+        entry.admissionNo && entry.admissionNo !== "" && s.admissionNo === entry.admissionNo
+      );
+      if (!student && entry.studentName) {
+        const nameLower = (entry.studentName as string).toLowerCase().trim();
+        student = allStudents.find(s => s.name.toLowerCase() === nameLower);
+        if (!student) {
+          student = allStudents.find(s => {
+            const sLower = s.name.toLowerCase();
+            const words = nameLower.split(/\s+/).filter((w: string) => w.length > 1);
+            return words.length >= 2 && words.every((w: string) => sLower.includes(w));
+          });
+        }
+      }
+      return {
+        studentId: student?.id ?? null,
+        studentName: student?.name ?? entry.studentName,
+        admissionNo: student?.admissionNo ?? entry.admissionNo ?? "",
+        balance: entry.balance ?? "",
+        matched: !!student,
+      };
+    });
+
+    res.json({ entries });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? "OCR processing failed" });
+  }
+});
+
 export default router;

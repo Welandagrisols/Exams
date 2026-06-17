@@ -5,6 +5,7 @@ import { examsTable } from "./exams";
 
 export const messagesTable = pgTable("messages", {
   id: serial("id").primaryKey(),
+  type: text("type").notNull().default("general"),
   title: text("title").notNull(),
   body: text("body").notNull(),
   classId: integer("class_id").references(() => classesTable.id, { onDelete: "set null" }),
@@ -21,6 +22,8 @@ export const messageRecipientsTable = pgTable("message_recipients", {
   parentName: text("parent_name"),
   parentPhone: text("parent_phone"),
   parentEmail: text("parent_email"),
+  feeBalance: text("fee_balance"),
+  smsSentAt: timestamp("sms_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
