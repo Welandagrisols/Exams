@@ -688,6 +688,16 @@ components:
           type: ["string", "null"]
         dateOfBirth:
           type: ["string", "null"]
+        parentName:
+          type: ["string", "null"]
+        parentPhone:
+          type: ["string", "null"]
+        parentEmail:
+          type: ["string", "null"]
+        nationality:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
 
     StudentInput:
       type: object
@@ -703,6 +713,16 @@ components:
           type: string
         dateOfBirth:
           type: string
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        parentEmail:
+          type: string
+        nationality:
+          type: string
+        notes:
+          type: string
 
     StudentUpdate:
       type: object
@@ -716,6 +736,16 @@ components:
         gender:
           type: string
         dateOfBirth:
+          type: string
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        parentEmail:
+          type: string
+        nationality:
+          type: string
+        notes:
           type: string
 
     LearningArea:

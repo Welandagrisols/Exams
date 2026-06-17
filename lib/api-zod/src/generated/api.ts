@@ -137,7 +137,12 @@ export const ListStudentsResponseItem = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -150,7 +155,12 @@ export const CreateStudentBody = zod.object({
   "admissionNo": zod.string(),
   "classId": zod.number(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.string().optional()
+  "dateOfBirth": zod.string().optional(),
+  "parentName": zod.string().optional(),
+  "parentPhone": zod.string().optional(),
+  "parentEmail": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "notes": zod.string().optional()
 })
 
 
@@ -168,7 +178,12 @@ export const GetStudentResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 
@@ -184,7 +199,12 @@ export const UpdateStudentBody = zod.object({
   "admissionNo": zod.string().optional(),
   "classId": zod.number().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.string().optional()
+  "dateOfBirth": zod.string().optional(),
+  "parentName": zod.string().optional(),
+  "parentPhone": zod.string().optional(),
+  "parentEmail": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "notes": zod.string().optional()
 })
 
 export const UpdateStudentResponse = zod.object({
@@ -194,7 +214,12 @@ export const UpdateStudentResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 })
 
 
@@ -417,7 +442,12 @@ export const GetReportResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 }),
   "exam": zod.object({
   "id": zod.number(),
@@ -481,7 +511,12 @@ export const UpdateReportResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 }),
   "exam": zod.object({
   "id": zod.number(),
@@ -540,7 +575,12 @@ export const GetRankingsResponseItem = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 }),
   "totalMarks": zod.number(),
   "totalMaxMarks": zod.number(),
@@ -651,7 +691,12 @@ export const GetStudentTrendsResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string().nullish(),
   "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "dateOfBirth": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "notes": zod.string().nullish()
 }),
   "exams": zod.array(zod.object({
   "examId": zod.number(),

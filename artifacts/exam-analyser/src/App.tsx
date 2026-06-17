@@ -16,6 +16,9 @@ import LearningAreas from "@/pages/learning-areas";
 import Settings from "@/pages/settings";
 import ClassTrends from "@/pages/trends/class";
 import StudentTrends from "@/pages/trends/student";
+import ImportStudents from "@/pages/students/import";
+import ScoreSheet from "@/pages/exams/scoresheet";
+import OcrUpload from "@/pages/exams/ocr-upload";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,8 @@ function Router() {
       <Route path="/classes/:classId/students" component={Students} />
       <Route path="/classes/:classId/exams" component={ClassExams} />
       <Route path="/exams/:examId/scores" component={ExamScores} />
+      <Route path="/exams/:examId/scoresheet" component={ScoreSheet} />
+      <Route path="/exams/:examId/ocr-upload" component={OcrUpload} />
       <Route path="/exams/:examId/analytics" component={ExamAnalytics} />
       <Route path="/exams/:examId/rankings" component={ExamRankings} />
       <Route path="/reports/:examId/:studentId" component={StudentReport} />
@@ -34,6 +39,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/trends/class/:classId" component={ClassTrends} />
       <Route path="/trends/student/:studentId" component={StudentTrends} />
+      <Route path="/students/import" component={ImportStudents} />
       <Route component={NotFound} />
     </Switch>
   );

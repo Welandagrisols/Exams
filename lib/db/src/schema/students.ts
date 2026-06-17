@@ -10,6 +10,11 @@ export const studentsTable = pgTable("students", {
   classId: integer("class_id").notNull().references(() => classesTable.id, { onDelete: "cascade" }),
   gender: text("gender"),
   dateOfBirth: date("date_of_birth", { mode: "string" }),
+  parentName: text("parent_name"),
+  parentPhone: text("parent_phone"),
+  parentEmail: text("parent_email"),
+  nationality: text("nationality"),
+  notes: text("notes"),
 });
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true });

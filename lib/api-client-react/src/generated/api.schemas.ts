@@ -64,6 +64,16 @@ export interface Student {
   gender?: string | null;
   /** @nullable */
   dateOfBirth?: string | null;
+  /** @nullable */
+  parentName?: string | null;
+  /** @nullable */
+  parentPhone?: string | null;
+  /** @nullable */
+  parentEmail?: string | null;
+  /** @nullable */
+  nationality?: string | null;
+  /** @nullable */
+  notes?: string | null;
 }
 
 export interface StudentInput {
@@ -72,6 +82,11 @@ export interface StudentInput {
   classId: number;
   gender?: string;
   dateOfBirth?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+  nationality?: string;
+  notes?: string;
 }
 
 export interface StudentUpdate {
@@ -80,6 +95,11 @@ export interface StudentUpdate {
   classId?: number;
   gender?: string;
   dateOfBirth?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+  nationality?: string;
+  notes?: string;
 }
 
 export interface LearningArea {

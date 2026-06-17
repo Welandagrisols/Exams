@@ -12,4 +12,9 @@ export interface StudentInput {
   classId: number;
   gender?: string;
   dateOfBirth?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+  nationality?: string;
+  notes?: string;
 }

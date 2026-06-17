@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
-import { Save, Check, AlertCircle } from "lucide-react";
+import { Save, AlertCircle, Printer, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 export default function ExamScores() {
   const [, params] = useRoute("/exams/:examId/scores");
   const examId = parseInt(params?.examId || "0");
+  const [, navigate] = useLocation();
   
   const { data: exam, isLoading: isLoadingExam } = useGetExam(examId, { query: { enabled: !!examId, queryKey: getGetExamQueryKey(examId) } });
   const { data: students, isLoading: isLoadingStudents } = useListStudents(exam?.classId ? { classId: exam.classId } : undefined, { query: { enabled: !!exam?.classId } });
@@ -97,14 +98,22 @@ export default function ExamScores() {
         ]}
       />
       <div className="p-4 md:p-6 mx-auto w-full max-w-[1600px]">
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center flex-wrap gap-3">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Data Entry</h2>
             <p className="text-muted-foreground text-sm">Enter marks for each learning area. Changes must be saved per student.</p>
           </div>
-          <div className="bg-muted px-4 py-2 rounded-md hidden sm:block">
-            <span className="text-sm font-medium">Status: </span>
-            <span className="text-sm uppercase font-bold ml-2 text-primary">{exam?.status || 'Unknown'}</span>
+          <div className="flex items-center gap-2">
+            <div className="bg-muted px-4 py-2 rounded-md hidden sm:block">
+              <span className="text-sm font-medium">Status: </span>
+              <span className="text-sm uppercase font-bold ml-2 text-primary">{exam?.status || 'Unknown'}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/exams/${examId}/scoresheet`)} className="gap-2">
+              <Printer className="h-4 w-4" /> Print Sheet
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/exams/${examId}/ocr-upload`)} className="gap-2">
+              <Camera className="h-4 w-4" /> OCR Upload
+            </Button>
           </div>
         </div>
 

@@ -12,6 +12,8 @@ import analyticsRouter from "./analytics";
 import dashboardRouter from "./dashboard";
 import trendsRouter from "./trends";
 import insightsRouter from "./insights";
+import importRouter from "./import";
+import ocrRouter from "./ocr";
 
 const router: IRouter = Router();
 
@@ -19,6 +21,7 @@ router.use(healthRouter);
 router.use(schoolRouter);
 router.use(classesRouter);
 router.use(studentsRouter);
+router.use(importRouter);
 router.use(learningAreasRouter);
 router.use(examsRouter);
 router.use(scoresRouter);
@@ -28,5 +31,6 @@ router.use(analyticsRouter);
 router.use(dashboardRouter);
 router.use(trendsRouter);
 router.use(insightsRouter);
+router.use(ocrRouter);
 
 export default router;

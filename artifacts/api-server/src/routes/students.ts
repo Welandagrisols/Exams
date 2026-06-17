@@ -13,6 +13,21 @@ import {
   DeleteStudentParams,
 } from "@workspace/api-zod";
 
+const STUDENT_SELECT = {
+  id: studentsTable.id,
+  name: studentsTable.name,
+  admissionNo: studentsTable.admissionNo,
+  classId: studentsTable.classId,
+  className: classesTable.name,
+  gender: studentsTable.gender,
+  dateOfBirth: studentsTable.dateOfBirth,
+  parentName: studentsTable.parentName,
+  parentPhone: studentsTable.parentPhone,
+  parentEmail: studentsTable.parentEmail,
+  nationality: studentsTable.nationality,
+  notes: studentsTable.notes,
+} as const;
+
 const router: IRouter = Router();
 
 router.get("/students", async (req, res): Promise<void> => {
@@ -22,15 +37,7 @@ router.get("/students", async (req, res): Promise<void> => {
     return;
   }
   const rows = await db
-    .select({
-      id: studentsTable.id,
-      name: studentsTable.name,
-      admissionNo: studentsTable.admissionNo,
-      classId: studentsTable.classId,
-      className: classesTable.name,
-      gender: studentsTable.gender,
-      dateOfBirth: studentsTable.dateOfBirth,
-    })
+    .select(STUDENT_SELECT)
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(query.data.classId != null ? eq(studentsTable.classId, query.data.classId) : undefined)
@@ -46,15 +53,7 @@ router.post("/students", async (req, res): Promise<void> => {
   }
   const [student] = await db.insert(studentsTable).values(parsed.data).returning();
   const [row] = await db
-    .select({
-      id: studentsTable.id,
-      name: studentsTable.name,
-      admissionNo: studentsTable.admissionNo,
-      classId: studentsTable.classId,
-      className: classesTable.name,
-      gender: studentsTable.gender,
-      dateOfBirth: studentsTable.dateOfBirth,
-    })
+    .select(STUDENT_SELECT)
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(eq(studentsTable.id, student.id));
@@ -68,15 +67,7 @@ router.get("/students/:id", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db
-    .select({
-      id: studentsTable.id,
-      name: studentsTable.name,
-      admissionNo: studentsTable.admissionNo,
-      classId: studentsTable.classId,
-      className: classesTable.name,
-      gender: studentsTable.gender,
-      dateOfBirth: studentsTable.dateOfBirth,
-    })
+    .select(STUDENT_SELECT)
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(eq(studentsTable.id, params.data.id));
@@ -104,15 +95,7 @@ router.patch("/students/:id", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db
-    .select({
-      id: studentsTable.id,
-      name: studentsTable.name,
-      admissionNo: studentsTable.admissionNo,
-      classId: studentsTable.classId,
-      className: classesTable.name,
-      gender: studentsTable.gender,
-      dateOfBirth: studentsTable.dateOfBirth,
-    })
+    .select(STUDENT_SELECT)
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(eq(studentsTable.id, params.data.id));
