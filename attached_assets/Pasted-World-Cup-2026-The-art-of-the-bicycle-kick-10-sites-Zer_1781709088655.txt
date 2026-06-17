@@ -1,0 +1,33 @@
+World Cup 2026: The art of the bicycle kick
+
+10 sites
+Zeraki Analytics, developed by Nairobi-based Litemore Ltd, primarily utilizes relational database systems like MySQL and SQL Server to manage and analyze school academic data. These databases are typically hosted on cloud servers to ensure no data loss. 
+
+Zeraki NEW
+ +4
+The underlying technology stack powering Zeraki involves:
+Backend: Java, Spring Boot, and JPA/Hibernate for handling complex relational data persistence and RESTful APIs.
+Frontend: TypeScript and Angular for web interfaces, alongside native/hybrid mobile apps.
+Data & Analytics: Structured query methodologies using SQL, Python (Pandas), and Databricks SQL environments for data transformation. 
+
+jobs.elevolt.co.ke
+ +5
+Would you like to know more about the specific data fields or analysis metrics that the database generates for school grading and exams?
+
+
+
+
+Zeraki Analytics is a data-driven digital platform designed for primary and secondary schools to automate, track, and analyze student academic performance. 
+Here is exactly what it does and how it works:
+What It Does
+Automates Grading: Converts raw exam scores into official grades instantly based on customizable school or national grading scales.
+Tracks Performance: Monitors the academic progress of individual students, specific classes, subject streams, and entire school terms over time. 
+Generates Report Forms: Designs and compiles comprehensive student report cards automatically, eliminating manual paperwork for teachers. 
+Sends SMS Notifications: Dispatches exam results, fee balances, and school announcements directly to parents' mobile phones. 
+Identifies Trends: Highlights top-performing subjects, pinpoints struggling students, and reveals teaching gaps across different classes. 
+How It Works
+Data Entry: Teachers input raw student marks directly into the Zeraki Analytics system via a web browser or the mobile application. 
+Cloud Processing: The data is securely uploaded to cloud servers, where relational databases (like MySQL/SQL Server) run automated formulas and calculations.
+Instant Analytics: The system instantly processes the marks to calculate totals, averages, standard deviations, subject positions, and overall class rankings.
+Dashboard Visualization: Principal, teachers, and administrators view the results through intuitive charts, graphs, and tabular dashboards. 
+Distribution: Results are shared digitally with parents via the Zeraki Achievements app or automated SMS alerts. 
