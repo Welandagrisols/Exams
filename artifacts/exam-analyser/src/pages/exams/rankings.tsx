@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRoute, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor } from "@/lib/utils";
-import { FileText, Trophy, TrendingUp } from "lucide-react";
+import { FileText, Trophy, TrendingUp, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function ExamRankings() {
@@ -26,6 +27,16 @@ export default function ExamRankings() {
       />
       
       <div className="p-4 md:p-6 max-w-5xl mx-auto w-full space-y-6">
+
+        {rankings && rankings.length > 0 && (
+          <div className="flex justify-end">
+            <Button asChild className="gap-2">
+              <a href={`/exams/${examId}/print-reports`} target="_blank" rel="noopener noreferrer">
+                <Printer className="h-4 w-4" /> Print All Reports
+              </a>
+            </Button>
+          </div>
+        )}
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-12 w-full" />

@@ -19,6 +19,7 @@ import StudentTrends from "@/pages/trends/student";
 import ImportStudents from "@/pages/students/import";
 import ScoreSheet from "@/pages/exams/scoresheet";
 import OcrUpload from "@/pages/exams/ocr-upload";
+import PrintAllReports from "@/pages/exams/print-reports";
 import MessagesList from "@/pages/messages/index";
 import ComposeMessage from "@/pages/messages/compose";
 import MessageDetail from "@/pages/messages/detail";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/exams/:examId/ocr-upload" component={OcrUpload} />
       <Route path="/exams/:examId/analytics" component={ExamAnalytics} />
       <Route path="/exams/:examId/rankings" component={ExamRankings} />
+      <Route path="/exams/:examId/print-reports" component={PrintAllReports} />
       <Route path="/reports/:examId/:studentId" component={StudentReport} />
       <Route path="/learning-areas" component={LearningAreas} />
       <Route path="/settings" component={Settings} />

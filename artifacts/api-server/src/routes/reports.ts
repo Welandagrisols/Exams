@@ -121,6 +121,26 @@ async function buildReport(examId: number, studentId: number) {
   };
 }
 
+router.get("/reports/:examId/all", async (req, res): Promise<void> => {
+  const examId = parseInt(req.params.examId);
+  if (isNaN(examId)) { res.status(400).json({ error: "Invalid examId" }); return; }
+
+  const studentRows = await db
+    .select({ studentId: scoresTable.studentId })
+    .from(scoresTable)
+    .where(eq(scoresTable.examId, examId))
+    .groupBy(scoresTable.studentId);
+
+  const reports = [];
+  for (const { studentId } of studentRows) {
+    const report = await buildReport(examId, studentId);
+    if (report) reports.push(report);
+  }
+
+  reports.sort((a, b) => a.rank - b.rank);
+  res.json(reports);
+});
+
 router.get("/reports/:examId/:studentId", async (req, res): Promise<void> => {
   const params = GetReportParams.safeParse(req.params);
   if (!params.success) {
