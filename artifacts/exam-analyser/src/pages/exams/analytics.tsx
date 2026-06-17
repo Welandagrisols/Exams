@@ -4,12 +4,136 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRoute } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor, getRubricHexColor } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, RefreshCw } from "lucide-react";
+
+function AiInsightsCard({ examId }: { examId: number }) {
+  const [text, setText] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [generated, setGenerated] = useState(false);
+
+  const generate = useCallback(async () => {
+    setText("");
+    setError(null);
+    setLoading(true);
+    setGenerated(true);
+    try {
+      const res = await fetch(`/api/insights/${examId}`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? `Request failed (${res.status})`);
+      }
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const payload = JSON.parse(line.slice(6));
+            if (payload.error) throw new Error(payload.error);
+            if (payload.content) setText(prev => prev + payload.content);
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      setError(err.message ?? "Failed to generate insights");
+    } finally {
+      setLoading(false);
+    }
+  }, [examId]);
+
+  const renderMarkdown = (raw: string) => {
+    const lines = raw.split("\n");
+    const elements: React.ReactNode[] = [];
+    let key = 0;
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        elements.push(<h3 key={key++} className="font-bold text-base mt-4 mb-1 text-foreground">{line.slice(3)}</h3>);
+      } else if (line.startsWith("- ")) {
+        elements.push(
+          <div key={key++} className="flex gap-2 text-sm text-muted-foreground ml-2 mb-1">
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+            <span>{line.slice(2)}</span>
+          </div>
+        );
+      } else if (line.trim()) {
+        elements.push(<p key={key++} className="text-sm text-muted-foreground mb-1">{line}</p>);
+      }
+    }
+    return elements;
+  };
+
+  return (
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-base">AI Insights</CardTitle>
+          </div>
+          {generated && !loading && (
+            <Button variant="ghost" size="sm" onClick={generate} className="h-7 gap-1.5 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3" /> Regenerate
+            </Button>
+          )}
+        </div>
+        {!generated && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Get AI-powered analysis of this exam — strengths, concerns, and recommended actions for next term.
+          </p>
+        )}
+      </CardHeader>
+      <CardContent>
+        {!generated ? (
+          <Button onClick={generate} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Generate Insights
+          </Button>
+        ) : loading ? (
+          <div className="space-y-2">
+            {text ? (
+              <div className="space-y-0.5">{renderMarkdown(text)}</div>
+            ) : (
+              <>
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </>
+            )}
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              Analysing exam data…
+            </div>
+          </div>
+        ) : error ? (
+          <div className="space-y-3">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={generate}>Try again</Button>
+          </div>
+        ) : (
+          <div className="space-y-0.5">{renderMarkdown(text)}</div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ExamAnalytics() {
   const [, params] = useRoute("/exams/:examId/analytics");
   const examId = parseInt(params?.examId || "0");
-  
+
   const { data: exam } = useGetExam(examId, { query: { enabled: !!examId, queryKey: getGetExamQueryKey(examId) } });
   const { data: analytics, isLoading } = useGetAnalytics(examId, { query: { enabled: !!examId, queryKey: getGetAnalyticsQueryKey(examId) } });
 
@@ -20,9 +144,9 @@ export default function ExamAnalytics() {
           <p className="font-semibold mb-1">{label}</p>
           <p className="text-sm">Mean: <span className="font-bold">{payload[0].value.toFixed(1)}%</span></p>
           {payload[0].payload.meanGrade && (
-             <p className="text-sm mt-1">
-               Grade: <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getRubricColor(payload[0].payload.meanGrade)}`}>{payload[0].payload.meanGrade}</span>
-             </p>
+            <p className="text-sm mt-1">
+              Grade: <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getRubricColor(payload[0].payload.meanGrade)}`}>{payload[0].payload.meanGrade}</span>
+            </p>
           )}
         </div>
       );
@@ -32,15 +156,15 @@ export default function ExamAnalytics() {
 
   return (
     <Layout>
-      <Header 
-        title="Exam Analytics" 
+      <Header
+        title="Exam Analytics"
         breadcrumbs={[
           { label: "Exams", href: exam ? `/classes/${exam.classId}/exams` : "#" },
           { label: exam?.name || "Loading...", href: `/exams/${examId}/scores` },
           { label: "Analytics" }
         ]}
       />
-      
+
       <div className="p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
         {isLoading ? (
           <>
@@ -80,9 +204,9 @@ export default function ExamAnalytics() {
                       if (count === 0) return null;
                       const width = `${(count / analytics.gradedCount) * 100}%`;
                       return (
-                        <div 
-                          key={grade} 
-                          style={{ width, backgroundColor: getRubricHexColor(grade) }} 
+                        <div
+                          key={grade}
+                          style={{ width, backgroundColor: getRubricHexColor(grade) }}
                           title={`${grade}: ${count} students`}
                         />
                       );
@@ -99,12 +223,15 @@ export default function ExamAnalytics() {
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getRubricHexColor(g1) }} />
                           <span>{group}: <strong>{count}</strong></span>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* AI Insights */}
+            <AiInsightsCard examId={examId} />
 
             {/* Mean Score Chart */}
             <Card className="overflow-hidden">
@@ -147,7 +274,6 @@ export default function ExamAnalytics() {
                     <div className="flex items-end gap-2">
                       <div className="text-3xl font-black">{area.meanPercentage.toFixed(1)}<span className="text-lg font-medium text-muted-foreground">%</span></div>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t">
                       <div>
                         <div className="text-muted-foreground text-xs">Highest</div>
