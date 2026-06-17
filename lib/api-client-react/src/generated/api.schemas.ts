@@ -242,6 +242,54 @@ export interface ExamAnalytics {
   overallDistribution: RubricDistribution;
 }
 
+export interface ExamTrendSubject {
+  learningAreaId: number;
+  name: string;
+  abbreviation: string;
+  average: number;
+}
+
+export interface ExamTrendPoint {
+  examId: number;
+  examName: string;
+  term: number;
+  year: number;
+  classAverage: number;
+  learningAreas: ExamTrendSubject[];
+}
+
+export interface ClassTrends {
+  classId: number;
+  className: string;
+  exams: ExamTrendPoint[];
+}
+
+export interface StudentExamSubject {
+  learningAreaId: number;
+  name: string;
+  abbreviation: string;
+  marks: number;
+  maxMarks: number;
+  percentage: number;
+}
+
+export interface StudentExamTrendPoint {
+  examId: number;
+  examName: string;
+  term: number;
+  year: number;
+  totalMarks: number;
+  totalMaxMarks: number;
+  averagePercentage: number;
+  overallGrade: string;
+  subjects: StudentExamSubject[];
+}
+
+export interface StudentTrends {
+  student: Student;
+  exams: StudentExamTrendPoint[];
+}
+
 export interface DashboardSummary {
   totalStudents: number;
   totalClasses: number;

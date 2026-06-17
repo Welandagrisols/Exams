@@ -539,6 +539,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExamAnalytics"
 
+  /trends/class/{classId}:
+    get:
+      operationId: getClassTrends
+      tags: [analytics]
+      summary: Get class performance trends across all exams
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class performance trends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassTrends"
+
+  /trends/student/{studentId}:
+    get:
+      operationId: getStudentTrends
+      tags: [analytics]
+      summary: Get a student's performance trends across all exams
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student performance trends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentTrends"
+
   /dashboard:
     get:
       operationId: getDashboard
@@ -972,6 +1010,104 @@ components:
           type: integer
         overallDistribution:
           $ref: "#/components/schemas/RubricDistribution"
+
+    ExamTrendSubject:
+      type: object
+      required: [learningAreaId, name, abbreviation, average]
+      properties:
+        learningAreaId:
+          type: integer
+        name:
+          type: string
+        abbreviation:
+          type: string
+        average:
+          type: number
+
+    ExamTrendPoint:
+      type: object
+      required: [examId, examName, term, year, classAverage, learningAreas]
+      properties:
+        examId:
+          type: integer
+        examName:
+          type: string
+        term:
+          type: integer
+        year:
+          type: integer
+        classAverage:
+          type: number
+        learningAreas:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamTrendSubject"
+
+    ClassTrends:
+      type: object
+      required: [classId, className, exams]
+      properties:
+        classId:
+          type: integer
+        className:
+          type: string
+        exams:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamTrendPoint"
+
+    StudentExamSubject:
+      type: object
+      required: [learningAreaId, name, abbreviation, marks, maxMarks, percentage]
+      properties:
+        learningAreaId:
+          type: integer
+        name:
+          type: string
+        abbreviation:
+          type: string
+        marks:
+          type: number
+        maxMarks:
+          type: integer
+        percentage:
+          type: number
+
+    StudentExamTrendPoint:
+      type: object
+      required: [examId, examName, term, year, totalMarks, totalMaxMarks, averagePercentage, overallGrade, subjects]
+      properties:
+        examId:
+          type: integer
+        examName:
+          type: string
+        term:
+          type: integer
+        year:
+          type: integer
+        totalMarks:
+          type: number
+        totalMaxMarks:
+          type: integer
+        averagePercentage:
+          type: number
+        overallGrade:
+          type: string
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentExamSubject"
+
+    StudentTrends:
+      type: object
+      required: [student, exams]
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        exams:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentExamTrendPoint"
 
     DashboardSummary:
       type: object

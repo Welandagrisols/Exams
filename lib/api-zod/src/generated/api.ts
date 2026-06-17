@@ -611,6 +611,70 @@ export const GetAnalyticsResponse = zod.object({
 
 
 /**
+ * @summary Get class performance trends across all exams
+ */
+export const GetClassTrendsParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const GetClassTrendsResponse = zod.object({
+  "classId": zod.number(),
+  "className": zod.string(),
+  "exams": zod.array(zod.object({
+  "examId": zod.number(),
+  "examName": zod.string(),
+  "term": zod.number(),
+  "year": zod.number(),
+  "classAverage": zod.number(),
+  "learningAreas": zod.array(zod.object({
+  "learningAreaId": zod.number(),
+  "name": zod.string(),
+  "abbreviation": zod.string(),
+  "average": zod.number()
+}))
+}))
+})
+
+
+/**
+ * @summary Get a student's performance trends across all exams
+ */
+export const GetStudentTrendsParams = zod.object({
+  "studentId": zod.coerce.number()
+})
+
+export const GetStudentTrendsResponse = zod.object({
+  "student": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "admissionNo": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish()
+}),
+  "exams": zod.array(zod.object({
+  "examId": zod.number(),
+  "examName": zod.string(),
+  "term": zod.number(),
+  "year": zod.number(),
+  "totalMarks": zod.number(),
+  "totalMaxMarks": zod.number(),
+  "averagePercentage": zod.number(),
+  "overallGrade": zod.string(),
+  "subjects": zod.array(zod.object({
+  "learningAreaId": zod.number(),
+  "name": zod.string(),
+  "abbreviation": zod.string(),
+  "marks": zod.number(),
+  "maxMarks": zod.number(),
+  "percentage": zod.number()
+}))
+}))
+})
+
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardResponse = zod.object({

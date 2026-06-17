@@ -14,6 +14,8 @@ import ExamRankings from "@/pages/exams/rankings";
 import StudentReport from "@/pages/exams/report";
 import LearningAreas from "@/pages/learning-areas";
 import Settings from "@/pages/settings";
+import ClassTrends from "@/pages/trends/class";
+import StudentTrends from "@/pages/trends/student";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/reports/:examId/:studentId" component={StudentReport} />
       <Route path="/learning-areas" component={LearningAreas} />
       <Route path="/settings" component={Settings} />
+      <Route path="/trends/class/:classId" component={ClassTrends} />
+      <Route path="/trends/student/:studentId" component={StudentTrends} />
       <Route component={NotFound} />
     </Switch>
   );

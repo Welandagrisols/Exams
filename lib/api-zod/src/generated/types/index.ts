@@ -8,11 +8,14 @@
 
 export * from './class';
 export * from './classInput';
+export * from './classTrends';
 export * from './classUpdate';
 export * from './dashboardSummary';
 export * from './exam';
 export * from './examAnalytics';
 export * from './examInput';
+export * from './examTrendPoint';
+export * from './examTrendSubject';
 export * from './examUpdate';
 export * from './healthStatus';
 export * from './learningArea';
@@ -31,7 +34,10 @@ export * from './score';
 export * from './scoreBulkInput';
 export * from './scoreEntry';
 export * from './student';
+export * from './studentExamSubject';
+export * from './studentExamTrendPoint';
 export * from './studentInput';
 export * from './studentReport';
+export * from './studentTrends';
 export * from './studentUpdate';
 export * from './subjectPerformance';

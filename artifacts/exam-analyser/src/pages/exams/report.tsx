@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRoute } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor, formatDate, getRubricHexColor } from "@/lib/utils";
-import { Printer, Save } from "lucide-react";
+import { Printer, Save, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useRef } from "react";
@@ -88,6 +88,11 @@ export default function StudentReport() {
       <div className="p-4 md:p-8 max-w-4xl mx-auto w-full pb-20 print:p-0 print:max-w-none">
         
         <div className="flex justify-end mb-6 print:hidden gap-3">
+          <Button variant="outline" asChild>
+            <a href={`/trends/student/${studentId}`}>
+              <TrendingUp className="w-4 h-4 mr-2" /> View Trends
+            </a>
+          </Button>
           <Button variant="outline" onClick={handleSaveComments} disabled={updateReport.isPending}>
             {updateReport.isPending ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Comments</>}
           </Button>

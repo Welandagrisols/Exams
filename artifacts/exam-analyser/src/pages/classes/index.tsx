@@ -2,7 +2,7 @@ import { useListClasses, useCreateClass, useDeleteClass } from "@workspace/api-c
 import { Layout, Header } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, BookOpen, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, Users, BookOpen, TrendingUp, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -161,12 +161,15 @@ export default function Classes() {
                       <p className="text-sm text-muted-foreground mb-4">Teacher: {cls.classTeacherName}</p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 border-t divide-x">
+                  <div className="grid grid-cols-3 border-t divide-x">
                     <Link href={`/classes/${cls.id}/students`} className="flex items-center justify-center p-3 text-sm font-medium hover:bg-muted transition-colors">
-                      <Users className="w-4 h-4 mr-2" /> Students
+                      <Users className="w-4 h-4 mr-1.5" /> Students
                     </Link>
                     <Link href={`/classes/${cls.id}/exams`} className="flex items-center justify-center p-3 text-sm font-medium hover:bg-muted transition-colors">
-                      <BookOpen className="w-4 h-4 mr-2" /> Exams
+                      <BookOpen className="w-4 h-4 mr-1.5" /> Exams
+                    </Link>
+                    <Link href={`/trends/class/${cls.id}`} className="flex items-center justify-center p-3 text-sm font-medium hover:bg-muted transition-colors text-blue-600">
+                      <TrendingUp className="w-4 h-4 mr-1.5" /> Trends
                     </Link>
                   </div>
                 </CardContent>

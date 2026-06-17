@@ -10,6 +10,7 @@ import reportsRouter from "./reports";
 import rankingsRouter from "./rankings";
 import analyticsRouter from "./analytics";
 import dashboardRouter from "./dashboard";
+import trendsRouter from "./trends";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(reportsRouter);
 router.use(rankingsRouter);
 router.use(analyticsRouter);
 router.use(dashboardRouter);
+router.use(trendsRouter);
 
 export default router;

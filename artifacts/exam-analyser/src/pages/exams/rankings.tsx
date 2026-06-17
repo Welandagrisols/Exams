@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRoute, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor } from "@/lib/utils";
-import { FileText, Trophy, ArrowRight } from "lucide-react";
+import { FileText, Trophy, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ExamRankings() {
@@ -92,9 +92,14 @@ export default function ExamRankings() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link href={`/reports/${examId}/${row.student.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
-                          <FileText className="w-4 h-4" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link href={`/trends/student/${row.student.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors text-slate-400" title="View trends">
+                            <TrendingUp className="w-4 h-4" />
+                          </Link>
+                          <Link href={`/reports/${examId}/${row.student.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors">
+                            <FileText className="w-4 h-4" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

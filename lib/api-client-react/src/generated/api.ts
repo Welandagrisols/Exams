@@ -22,6 +22,7 @@ import type {
 import type {
   Class,
   ClassInput,
+  ClassTrends,
   ClassUpdate,
   DashboardSummary,
   Exam,
@@ -44,6 +45,7 @@ import type {
   Student,
   StudentInput,
   StudentReport,
+  StudentTrends,
   StudentUpdate
 } from './api.schemas';
 
@@ -2142,6 +2144,160 @@ export function useGetAnalytics<TData = Awaited<ReturnType<typeof getAnalytics>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAnalyticsQueryOptions(examId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClassTrendsUrl = (classId: number,) => {
+
+
+
+
+  return `/api/trends/class/${classId}`
+}
+
+/**
+ * @summary Get class performance trends across all exams
+ */
+export const getClassTrends = async (classId: number, options?: RequestInit): Promise<ClassTrends> => {
+
+  return customFetch<ClassTrends>(getGetClassTrendsUrl(classId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClassTrendsQueryKey = (classId: number,) => {
+    return [
+    `/api/trends/class/${classId}`
+    ] as const;
+    }
+
+
+export const getGetClassTrendsQueryOptions = <TData = Awaited<ReturnType<typeof getClassTrends>>, TError = ErrorType<unknown>>(classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClassTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClassTrendsQueryKey(classId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClassTrends>>> = ({ signal }) => getClassTrends(classId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(classId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClassTrends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClassTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof getClassTrends>>>
+export type GetClassTrendsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get class performance trends across all exams
+ */
+
+export function useGetClassTrends<TData = Awaited<ReturnType<typeof getClassTrends>>, TError = ErrorType<unknown>>(
+ classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClassTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClassTrendsQueryOptions(classId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetStudentTrendsUrl = (studentId: number,) => {
+
+
+
+
+  return `/api/trends/student/${studentId}`
+}
+
+/**
+ * @summary Get a student's performance trends across all exams
+ */
+export const getStudentTrends = async (studentId: number, options?: RequestInit): Promise<StudentTrends> => {
+
+  return customFetch<StudentTrends>(getGetStudentTrendsUrl(studentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentTrendsQueryKey = (studentId: number,) => {
+    return [
+    `/api/trends/student/${studentId}`
+    ] as const;
+    }
+
+
+export const getGetStudentTrendsQueryOptions = <TData = Awaited<ReturnType<typeof getStudentTrends>>, TError = ErrorType<unknown>>(studentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentTrendsQueryKey(studentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentTrends>>> = ({ signal }) => getStudentTrends(studentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(studentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentTrends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentTrends>>>
+export type GetStudentTrendsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a student's performance trends across all exams
+ */
+
+export function useGetStudentTrends<TData = Awaited<ReturnType<typeof getStudentTrends>>, TError = ErrorType<unknown>>(
+ studentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentTrendsQueryOptions(studentId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
