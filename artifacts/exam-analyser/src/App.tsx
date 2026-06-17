@@ -19,6 +19,9 @@ import StudentTrends from "@/pages/trends/student";
 import ImportStudents from "@/pages/students/import";
 import ScoreSheet from "@/pages/exams/scoresheet";
 import OcrUpload from "@/pages/exams/ocr-upload";
+import MessagesList from "@/pages/messages/index";
+import ComposeMessage from "@/pages/messages/compose";
+import MessageDetail from "@/pages/messages/detail";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,9 @@ function Router() {
       <Route path="/trends/class/:classId" component={ClassTrends} />
       <Route path="/trends/student/:studentId" component={StudentTrends} />
       <Route path="/students/import" component={ImportStudents} />
+      <Route path="/messages" component={MessagesList} />
+      <Route path="/messages/compose" component={ComposeMessage} />
+      <Route path="/messages/:id" component={MessageDetail} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -5,3 +5,4 @@ export * from "./learningAreas";
 export * from "./exams";
 export * from "./scores";
 export * from "./reportComments";
+export * from "./messages";

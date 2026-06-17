@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, LogOut, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, MessageSquare, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/classes", label: "Classes", icon: Users },
   { href: "/learning-areas", label: "Learning Areas", icon: BookOpen },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
 ];
 
 export function Sidebar() {
