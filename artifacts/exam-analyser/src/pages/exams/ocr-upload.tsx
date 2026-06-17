@@ -32,6 +32,7 @@ export default function OcrUpload() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
     setFile(file);
@@ -140,13 +141,23 @@ export default function OcrUpload() {
                     <div className="space-y-3">
                       <Camera className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                       <div>
-                        <p className="font-medium">Drop photo here or click to upload</p>
+                        <p className="font-medium">Drop photo here or click to upload from gallery</p>
                         <p className="text-sm text-muted-foreground mt-1">JPG, PNG, WEBP • Max 20MB</p>
                       </div>
                     </div>
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="gap-2" onClick={() => cameraRef.current?.click()}>
+                    <Camera className="h-4 w-4" /> Take Photo
+                  </Button>
+                  <Button type="button" variant="outline" className="gap-2" onClick={() => fileRef.current?.click()}>
+                    <Upload className="h-4 w-4" /> Upload from Gallery
+                  </Button>
+                </div>
 
                 {file && !result && (
                   <Button onClick={handleProcess} disabled={loading} className="gap-2 w-full md:w-auto">

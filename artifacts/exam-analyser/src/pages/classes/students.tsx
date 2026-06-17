@@ -2,7 +2,7 @@ import { useListStudents, useCreateStudent, useDeleteStudent, useGetClass, getLi
 import { Layout, Header } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, User, Trash2, Upload, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Users, User, Trash2, Upload, Phone, ChevronDown, ChevronUp, Camera, Sparkles, Loader2, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
@@ -44,17 +44,27 @@ export default function Students() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
   const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const scanFileRef = useRef<HTMLInputElement>(null);
+  const scanCameraRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  function closeDialog() {
+    setIsDialogOpen(false);
+    setShowExtra(false);
+    setOcrPreview(null);
+    setOcrLoading(false);
+    form.reset();
+  }
 
   const createStudent = useCreateStudent({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey({ classId }) });
-        setIsDialogOpen(false);
-        setShowExtra(false);
+        closeDialog();
         toast({ title: "Student added successfully" });
-        form.reset();
       },
       onError: () => { toast({ title: "Failed to add student", variant: "destructive" }); }
     }
@@ -79,6 +89,35 @@ export default function Students() {
     createStudent.mutate({ data: { ...values, classId, parentEmail: values.parentEmail || undefined } });
   }
 
+  async function handleOcrScan(file: File) {
+    setOcrLoading(true);
+    const reader = new FileReader();
+    reader.onload = e => setOcrPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/ocr/student", { method: "POST", body: fd });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const data = await res.json();
+      if (data.name) form.setValue("name", data.name);
+      if (data.admissionNo) form.setValue("admissionNo", data.admissionNo);
+      if (data.gender === "M" || data.gender === "F") form.setValue("gender", data.gender);
+      if (data.dateOfBirth) form.setValue("dateOfBirth", data.dateOfBirth);
+      if (data.parentName) { form.setValue("parentName", data.parentName); setShowExtra(true); }
+      if (data.parentPhone) { form.setValue("parentPhone", data.parentPhone); setShowExtra(true); }
+      if (data.parentEmail) { form.setValue("parentEmail", data.parentEmail); setShowExtra(true); }
+      if (data.nationality) form.setValue("nationality", data.nationality);
+      if (data.notes) form.setValue("notes", data.notes);
+      toast({ title: "Form scanned!", description: "Fields pre-filled. Review and correct as needed." });
+    } catch (err: any) {
+      toast({ title: "Scan failed", description: err.message, variant: "destructive" });
+      setOcrPreview(null);
+    } finally {
+      setOcrLoading(false);
+    }
+  }
+
   return (
     <Layout>
       <Header
@@ -92,12 +131,52 @@ export default function Students() {
             <Button variant="outline" size="sm" onClick={() => navigate(`/students/import?classId=${classId}`)} className="gap-2">
               <Upload className="w-4 h-4" /> Import Excel
             </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={open => { if (!open) closeDialog(); else setIsDialogOpen(true); }}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="w-4 h-4 mr-2" /> Add Student</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Add Student</DialogTitle></DialogHeader>
+
+                {/* OCR Scan Section */}
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Scan a registration form or admission card
+                    </div>
+                    {ocrPreview && (
+                      <button type="button" onClick={() => setOcrPreview(null)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {ocrPreview ? (
+                    <img src={ocrPreview} alt="Scanned form" className="max-h-32 rounded-md object-contain mx-auto" />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">AI will read the photo and fill in the fields below automatically.</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={ocrLoading} onClick={() => scanCameraRef.current?.click()}>
+                      {ocrLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                      Take Photo
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={ocrLoading} onClick={() => scanFileRef.current?.click()}>
+                      {ocrLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      Upload Image
+                    </Button>
+                  </div>
+                  {ocrLoading && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin text-primary" /> Reading form with AI…
+                    </p>
+                  )}
+                  <input ref={scanCameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrScan(f); e.target.value = ""; }} />
+                  <input ref={scanFileRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleOcrScan(f); e.target.value = ""; }} />
+                </div>
+
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     {/* Core fields */}

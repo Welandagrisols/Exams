@@ -109,4 +109,59 @@ Rules:
   }
 });
 
+router.post("/ocr/student", upload.single("image"), async (req, res): Promise<void> => {
+  if (!req.file) {
+    res.status(400).json({ error: "Image file is required" });
+    return;
+  }
+
+  const prompt = `You are reading a student registration form, admission card, or biodata sheet from a school.
+
+Extract all visible student information from the image and return ONLY a valid JSON object with this exact structure:
+{
+  "name": "full student name or null",
+  "admissionNo": "admission number or null",
+  "gender": "M or F or null",
+  "dateOfBirth": "YYYY-MM-DD format or null",
+  "parentName": "parent or guardian full name or null",
+  "parentPhone": "phone number or null",
+  "parentEmail": "email address or null",
+  "nationality": "nationality or null",
+  "notes": "any other relevant notes or null"
+}
+
+Rules:
+- Use null for any field not visible or legible
+- Gender must be "M" or "F" only (infer from Male/Female/Boy/Girl if written)
+- dateOfBirth must be in YYYY-MM-DD format; convert from any format found
+- parentPhone: include country code if visible, otherwise use as written
+- Return ONLY the JSON object, no explanation`;
+
+  const base64Image = req.file.buffer.toString("base64");
+  const mimeType = (req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif") || "image/jpeg";
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}`, detail: "high" } },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const content = response.choices[0]?.message?.content ?? "{}";
+    const parsed = JSON.parse(content);
+    res.json(parsed);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? "OCR processing failed" });
+  }
+});
+
 export default router;
