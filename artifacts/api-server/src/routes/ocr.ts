@@ -217,4 +217,70 @@ Rules:
   }
 });
 
+router.post("/ocr/student-list", upload.single("image"), async (req, res): Promise<void> => {
+  if (!req.file) {
+    res.status(400).json({ error: "Image file is required" });
+    return;
+  }
+
+  const prompt = `You are reading a handwritten or printed school student list, class register, or admission register.
+
+Extract ALL student entries visible in the image and return ONLY a valid JSON object with this exact structure:
+{
+  "students": [
+    {
+      "name": "full student name",
+      "admissionNo": "admission/roll number or null",
+      "gender": "M or F or null",
+      "dateOfBirth": "YYYY-MM-DD or null",
+      "parentName": "parent/guardian name or null",
+      "parentPhone": "phone number or null",
+      "parentEmail": "email or null",
+      "nationality": "nationality or null",
+      "notes": "any other notes or null"
+    }
+  ]
+}
+
+Rules:
+- Extract EVERY student row visible in the image, even if some fields are missing
+- name is required — skip a row only if name is completely illegible
+- admissionNo: the admission/roll/registration number if shown, else null
+- gender: "M" or "F" only; infer from Male/Female/Boy/Girl/M/F if written; null if unclear
+- dateOfBirth: convert any date format to YYYY-MM-DD; null if not shown
+- parentPhone: include country code if visible; use as written otherwise; null if not shown
+- Return ONLY the JSON object, no markdown, no explanation`;
+
+  const base64Image = req.file.buffer.toString("base64");
+  const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType } },
+    ]);
+
+    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(text);
+    const students = (parsed.students ?? []).map((s: any, i: number) => ({
+      rowIndex: i,
+      name: (s.name ?? "").trim(),
+      admissionNo: (s.admissionNo ?? "").trim(),
+      gender: s.gender === "M" || s.gender === "F" ? s.gender : null,
+      dateOfBirth: s.dateOfBirth ?? null,
+      parentName: s.parentName ?? null,
+      parentPhone: s.parentPhone ?? null,
+      parentEmail: s.parentEmail ?? null,
+      nationality: s.nationality ?? null,
+      notes: s.notes ?? null,
+      valid: !!(s.name ?? "").trim(),
+    }));
+
+    res.json({ students, total: students.length, valid: students.filter((s: any) => s.valid).length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? "OCR processing failed" });
+  }
+});
+
 export default router;
