@@ -5,13 +5,13 @@
  * JSS Exam Analyser API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClassSnapshot } from './classSnapshot';
 import type { Exam } from './exam';
-import type { RankedStudent } from './rankedStudent';
 
 export interface DashboardSummary {
   totalStudents: number;
   totalClasses: number;
   totalExams: number;
   recentExams: Exam[];
-  topPerformers: RankedStudent[];
+  classSnapshots: ClassSnapshot[];
 }

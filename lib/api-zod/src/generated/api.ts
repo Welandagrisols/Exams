@@ -692,23 +692,28 @@ export const GetDashboardResponse = zod.object({
   "closingDate": zod.string().nullish(),
   "status": zod.string().optional()
 })),
-  "topPerformers": zod.array(zod.object({
-  "rank": zod.number(),
-  "student": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "admissionNo": zod.string(),
+  "classSnapshots": zod.array(zod.object({
   "classId": zod.number(),
-  "className": zod.string().nullish(),
-  "gender": zod.string().nullish(),
-  "dateOfBirth": zod.string().nullish()
+  "className": zod.string(),
+  "studentCount": zod.number(),
+  "latestExamId": zod.number().nullish(),
+  "latestExamName": zod.string().nullable(),
+  "latestAverage": zod.number().nullable(),
+  "latestGrades": zod.object({
+  "EE": zod.number(),
+  "ME": zod.number(),
+  "AE": zod.number(),
+  "BE": zod.number()
 }),
-  "totalMarks": zod.number(),
-  "totalMaxMarks": zod.number(),
-  "averagePercentage": zod.number(),
-  "averagePoints": zod.number(),
-  "overallGrade": zod.string(),
-  "subjectCount": zod.number().optional()
+  "sparkline": zod.array(zod.object({
+  "examId": zod.number(),
+  "examName": zod.string(),
+  "term": zod.number(),
+  "year": zod.number(),
+  "average": zod.number()
+})),
+  "topStudentName": zod.string().nullish(),
+  "topStudentGrade": zod.string().nullish()
 }))
 })
 

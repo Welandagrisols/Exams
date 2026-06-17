@@ -290,12 +290,45 @@ export interface StudentTrends {
   exams: StudentExamTrendPoint[];
 }
 
+export interface ClassSparkPoint {
+  examId: number;
+  examName: string;
+  term: number;
+  year: number;
+  average: number;
+}
+
+export interface ClassGradeSummary {
+  EE: number;
+  ME: number;
+  AE: number;
+  BE: number;
+}
+
+export interface ClassSnapshot {
+  classId: number;
+  className: string;
+  studentCount: number;
+  /** @nullable */
+  latestExamId?: number | null;
+  /** @nullable */
+  latestExamName: string | null;
+  /** @nullable */
+  latestAverage: number | null;
+  latestGrades: ClassGradeSummary;
+  sparkline: ClassSparkPoint[];
+  /** @nullable */
+  topStudentName?: string | null;
+  /** @nullable */
+  topStudentGrade?: string | null;
+}
+
 export interface DashboardSummary {
   totalStudents: number;
   totalClasses: number;
   totalExams: number;
   recentExams: Exam[];
-  topPerformers: RankedStudent[];
+  classSnapshots: ClassSnapshot[];
 }
 
 export type ListStudentsParams = {

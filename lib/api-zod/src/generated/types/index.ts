@@ -7,7 +7,10 @@
  */
 
 export * from './class';
+export * from './classGradeSummary';
 export * from './classInput';
+export * from './classSnapshot';
+export * from './classSparkPoint';
 export * from './classTrends';
 export * from './classUpdate';
 export * from './dashboardSummary';

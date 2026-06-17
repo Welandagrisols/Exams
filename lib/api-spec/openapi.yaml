@@ -1109,9 +1109,64 @@ components:
           items:
             $ref: "#/components/schemas/StudentExamTrendPoint"
 
+    ClassSparkPoint:
+      type: object
+      required: [examId, examName, term, year, average]
+      properties:
+        examId:
+          type: integer
+        examName:
+          type: string
+        term:
+          type: integer
+        year:
+          type: integer
+        average:
+          type: number
+
+    ClassGradeSummary:
+      type: object
+      required: [EE, ME, AE, BE]
+      properties:
+        EE:
+          type: integer
+        ME:
+          type: integer
+        AE:
+          type: integer
+        BE:
+          type: integer
+
+    ClassSnapshot:
+      type: object
+      required: [classId, className, studentCount, latestExamName, latestAverage, latestGrades, sparkline]
+      properties:
+        classId:
+          type: integer
+        className:
+          type: string
+        studentCount:
+          type: integer
+        latestExamId:
+          type: ["integer", "null"]
+        latestExamName:
+          type: ["string", "null"]
+        latestAverage:
+          type: ["number", "null"]
+        latestGrades:
+          $ref: "#/components/schemas/ClassGradeSummary"
+        sparkline:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClassSparkPoint"
+        topStudentName:
+          type: ["string", "null"]
+        topStudentGrade:
+          type: ["string", "null"]
+
     DashboardSummary:
       type: object
-      required: [totalStudents, totalClasses, totalExams, recentExams, topPerformers]
+      required: [totalStudents, totalClasses, totalExams, recentExams, classSnapshots]
       properties:
         totalStudents:
           type: integer
@@ -1123,7 +1178,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Exam"
-        topPerformers:
+        classSnapshots:
           type: array
           items:
-            $ref: "#/components/schemas/RankedStudent"
+            $ref: "#/components/schemas/ClassSnapshot"
