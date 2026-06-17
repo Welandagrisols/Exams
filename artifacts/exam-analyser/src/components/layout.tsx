@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, MessageSquare, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, MessageSquare, ChevronRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
