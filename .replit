@@ -24,6 +24,10 @@ args = "API Server"
 task = "workflow.run"
 args = "Exam Analyser"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Mobile App"
+
 [[workflows.workflow]]
 name = "API Server"
 author = "agent"
@@ -47,6 +51,17 @@ outputType = "webview"
 task = "shell.exec"
 args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/exam-analyser run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Mobile App"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 pnpm --filter @workspace/mobile-app run start"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -88,3 +103,6 @@ externalPort = 3000
 
 [userenv.development]
 PORT = "5000"
+
+[userenv.shared]
+EXPO_PUBLIC_API_URL = "https://7378cf3a-c1ff-421a-93af-c52d48d34cd1-00-3r6ex6np8f0hw.worf.replit.dev"
