@@ -1,8 +1,11 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/login";
+import AuthCallback from "@/pages/auth/callback";
 
 import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
@@ -26,7 +29,30 @@ import MessageDetail from "@/pages/messages/detail";
 
 const queryClient = new QueryClient();
 
-function Router() {
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1e3a5f]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          <p className="text-white text-sm">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/login" component={LoginPage} />
+        <Route path="/auth/callback" component={AuthCallback} />
+        <Route><Redirect to="/login" /></Route>
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -48,6 +74,7 @@ function Router() {
       <Route path="/messages" component={MessagesList} />
       <Route path="/messages/compose" component={ComposeMessage} />
       <Route path="/messages/:id" component={MessageDetail} />
+      <Route path="/login"><Redirect to="/" /></Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -56,12 +83,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AppRoutes />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
