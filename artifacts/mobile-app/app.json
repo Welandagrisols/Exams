@@ -42,6 +42,13 @@
     },
     "splash": {
       "backgroundColor": "#1e3a5f"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3e83eea9-8682-4d54-b4a4-b950c7d093de"
+      }
+    },
+    "owner": "wesleykoech"
   }
 }
