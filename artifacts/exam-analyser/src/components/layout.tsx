@@ -30,8 +30,8 @@ export function Sidebar() {
           <GraduationCap className="h-7 w-7" style={{ color: SIDEBAR_SUBTEXT }} />
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-white leading-tight">Elimu Analytics</h1>
-          <p className="text-xs font-semibold uppercase tracking-widest mt-0.5" style={{ color: SIDEBAR_SUBTEXT }}>JSS Portal</p>
+          <h1 className="text-lg font-bold tracking-tight text-white leading-tight">EduMetrics</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest mt-0.5" style={{ color: SIDEBAR_SUBTEXT }}>School Portal</p>
         </div>
       </div>
 
@@ -73,12 +73,12 @@ export function Sidebar() {
         >
           <Avatar className="h-9 w-9 flex-shrink-0">
             <AvatarFallback className="text-white text-xs font-bold" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
-              EA
+              EM
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white truncate">Admin</p>
-            <p className="text-xs truncate" style={{ color: SIDEBAR_SUBTEXT }}>Elimu Analytics</p>
+            <p className="text-xs truncate" style={{ color: SIDEBAR_SUBTEXT }}>EduMetrics</p>
           </div>
           <LogOut className="h-4 w-4 flex-shrink-0 opacity-50" style={{ color: SIDEBAR_SUBTEXT }} />
         </div>

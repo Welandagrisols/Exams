@@ -32,8 +32,8 @@ export default function LoginPage() {
                 d="M12 14l6.16-3.422A12.083 12.083 0 0121 21H3a12.083 12.083 0 012.84-10.422L12 14z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#1e3a5f]">Elimu Analytics</h1>
-          <p className="text-sm text-gray-500">JSS Exam Management Portal</p>
+          <h1 className="text-2xl font-bold text-[#1e3a5f]">EduMetrics</h1>
+          <p className="text-sm text-gray-500">School Exam Management Portal</p>
         </div>
 
         <div className="w-full h-px bg-gray-100" />

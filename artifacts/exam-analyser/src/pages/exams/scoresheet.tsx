@@ -112,7 +112,7 @@ export default function ScoreSheet() {
               <div className="text-xs text-gray-500">Deputy Principal Signature</div>
             </div>
           </div>
-          <div className="mt-6 text-center text-[10px] text-gray-400 print:block hidden">Printed by Elimu Analytics — JSS Portal</div>
+          <div className="mt-6 text-center text-[10px] text-gray-400 print:block hidden">Printed by EduMetrics</div>
         </div>
       )}
 
