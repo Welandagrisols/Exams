@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const redirectTo = AuthSession.makeRedirectUri({ scheme: "jssexam" });
+      const redirectTo = AuthSession.makeRedirectUri({ scheme: "edumetrics" });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -55,11 +55,11 @@ export default function LoginScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.card}>
         <View style={styles.logoCircle}>
-          <Text style={styles.logoText}>EA</Text>
+          <Text style={styles.logoText}>EM</Text>
         </View>
 
-        <Text style={styles.title}>Elimu Analytics</Text>
-        <Text style={styles.subtitle}>JSS Exam Management</Text>
+        <Text style={styles.title}>EduMetrics</Text>
+        <Text style={styles.subtitle}>School Exam Management</Text>
 
         <View style={styles.divider} />
 

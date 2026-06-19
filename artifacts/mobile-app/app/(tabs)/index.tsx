@@ -170,7 +170,7 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>JSS Exam Analyser</Text>
+        <Text style={styles.headerTitle}>EduMetrics</Text>
         <Text style={styles.headerSub}>School performance at a glance</Text>
       </View>
 

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "JSS Exam Analyser",
+    "name": "EduMetrics",
     "slug": "jss-exam-analyser",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "jssexam",
+    "scheme": "edumetrics",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

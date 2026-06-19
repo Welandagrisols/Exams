@@ -1,4 +1,4 @@
-# JSS Exam Analyser
+# EduMetrics
 
 School exam management system with web portal and companion mobile app. Teachers can manage classes, enter exam scores, generate report cards, and send SMS messages to parents.
 
