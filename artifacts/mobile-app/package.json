@@ -1,21 +1,23 @@
 {
-  "name": "@workspace/mobile-app",
+  "name": "jss-exam-analyser",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --port 8082",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:apk": "EXPO_TOKEN=$EXPO_TOKEN ./node_modules/.bin/eas build --platform android --profile preview --non-interactive",
+    "build:apk:prod": "EXPO_TOKEN=$EXPO_TOKEN ./node_modules/.bin/eas build --platform android --profile production --non-interactive"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.2.3",
     "@expo/vector-icons": "^14.0.0",
-    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-async-storage/async-storage": "~2.1.2",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.90.21",
     "expo": "~53.0.0",
-    "expo-auth-session": "^56.0.14",
+    "expo-auth-session": "~6.2.1",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-linking": "~7.1.5",
@@ -24,7 +26,7 @@
     "expo-splash-screen": "~0.30.10",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.11",
-    "expo-web-browser": "^56.0.5",
+    "expo-web-browser": "~14.2.0",
     "react": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "~2.24.0",
@@ -36,6 +38,8 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~19.0.10",
+    "eas-cli": "^20.3.0",
     "typescript": "~5.8.3"
-  }
+  },
+  "packageManager": "pnpm@9.15.0"
 }

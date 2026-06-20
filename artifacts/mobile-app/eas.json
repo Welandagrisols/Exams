@@ -1,32 +1,17 @@
 {
   "cli": {
-    "version": ">= 16.0.0",
-    "requireCommit": false,
-    "appVersionSource": "local"
+    "version": ">= 16.0.0"
   },
   "build": {
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "$EXPO_PUBLIC_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$EXPO_PUBLIC_SUPABASE_ANON_KEY",
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
-      },
-      "ios": {
-        "resourceClass": "m-medium"
-      },
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "$EXPO_PUBLIC_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$EXPO_PUBLIC_SUPABASE_ANON_KEY",
-        "EXPO_PUBLIC_API_URL": "$EXPO_PUBLIC_API_URL"
       }
     }
   },
