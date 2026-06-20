@@ -1,18 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
 
 export default function AuthCallback() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/");
-      } else {
-        navigate("/login");
-      }
-    });
+    navigate("/");
   }, [navigate]);
 
   return (

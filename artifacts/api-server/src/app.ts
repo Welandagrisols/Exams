@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { requireAuth } from "./middlewares/auth";
+import { setupAuth, registerAuthRoutes } from "./lib/replitAuth";
 
 const app: Express = express();
 
@@ -26,14 +27,23 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", (req, res, next) => {
-  if (req.path === "/health") return next();
-  return requireAuth(req, res, next);
-});
-app.use("/api", router);
+export async function createApp(): Promise<Express> {
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
+  app.use("/api", (req, res, next) => {
+    if (req.path === "/health" || req.path === "/auth/user" || req.path === "/login" || req.path === "/logout" || req.path === "/callback") {
+      return next();
+    }
+    return requireAuth(req, res, next);
+  });
+  app.use("/api", router);
+
+  return app;
+}
 
 export default app;
