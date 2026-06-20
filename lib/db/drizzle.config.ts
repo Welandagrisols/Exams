@@ -1,10 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 import path from "path";
 
-const url = process.env.SUPABASE_DB_URL ?? process.env.DATABASE_URL;
+const url = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL;
 
 if (!url) {
-  throw new Error("SUPABASE_DB_URL must be set.");
+  throw new Error("DATABASE_URL must be set.");
 }
 
 export default defineConfig({
@@ -12,6 +12,6 @@ export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
     url,
-    ssl: true,
+    ssl: url.includes("localhost") || url.includes("127.0.0.1") ? false : true,
   },
 });

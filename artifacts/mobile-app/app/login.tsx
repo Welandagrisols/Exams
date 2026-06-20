@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   View,
   Text,
@@ -8,47 +7,17 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
-import * as AuthSession from "expo-auth-session";
-import { supabase } from "@/lib/supabase";
-
-WebBrowser.maybeCompleteAuthSession();
+import { useState } from "react";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    try {
-      const redirectTo = AuthSession.makeRedirectUri({ scheme: "edumetrics" });
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (error) throw error;
-      if (!data.url) throw new Error("No auth URL returned");
-
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-
-      if (result.type === "success") {
-        const url = result.url;
-        const params = new URLSearchParams(url.split("?")[1] ?? url.split("#")[1] ?? "");
-        const code = params.get("code");
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-        }
-      }
-    } catch (err: unknown) {
-      Alert.alert("Sign in failed", err instanceof Error ? err.message : "Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleLogin = () => {
+    Alert.alert(
+      "Sign In",
+      "Please sign in via the EduMetrics web portal first, then open the mobile app.",
+    );
   };
 
   return (
@@ -66,19 +35,16 @@ export default function LoginScreen() {
         <Text style={styles.signinLabel}>Sign in to continue</Text>
 
         <TouchableOpacity
-          style={[styles.googleBtn, loading && styles.googleBtnDisabled]}
-          onPress={handleGoogleSignIn}
+          style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
+          onPress={handleLogin}
           disabled={loading}
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="#666" />
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.googleIcon}>G</Text>
+            <Text style={styles.loginBtnText}>Log in</Text>
           )}
-          <Text style={styles.googleBtnText}>
-            {loading ? "Signing in…" : "Continue with Google"}
-          </Text>
         </TouchableOpacity>
 
         <Text style={styles.footer}>For authorized school staff only</Text>
@@ -144,31 +110,23 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     color: "#555",
   },
-  googleBtn: {
+  loginBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    backgroundColor: "#1e3a5f",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,
     width: "100%",
-    backgroundColor: "#fff",
   },
-  googleBtnDisabled: {
+  loginBtnDisabled: {
     opacity: 0.6,
   },
-  googleIcon: {
-    fontSize: 16,
-    fontFamily: "Poppins_700Bold",
-    color: "#4285F4",
-  },
-  googleBtnText: {
+  loginBtnText: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
-    color: "#333",
+    color: "#fff",
   },
   footer: {
     fontSize: 11,

@@ -1,26 +1,14 @@
-import { supabase } from "./supabase";
-
 const DEV_DOMAIN = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 export function getApiUrl(path: string): string {
   return `${DEV_DOMAIN}/api${path}`;
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    return { Authorization: `Bearer ${session.access_token}` };
-  }
-  return {};
-}
-
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = getApiUrl(path);
-  const authHeaders = await getAuthHeaders();
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders,
       ...options?.headers,
     },
     ...options,
