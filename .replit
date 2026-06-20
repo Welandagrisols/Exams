@@ -107,3 +107,5 @@ externalPort = 3000
 EXPO_PUBLIC_API_URL = "https://7378cf3a-c1ff-421a-93af-c52d48d34cd1-00-3r6ex6np8f0hw.worf.replit.dev"
 PORT = "8000"
 BASE_PATH = "/"
+EXPO_PUBLIC_SUPABASE_URL = "https://xxcaqxycwinuquphocge.supabase.co"
+EXPO_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4Y2FxeHljd2ludXF1cGhvY2dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTg1NTQsImV4cCI6MjA5NzM3NDU1NH0.I130ORd8VM0zQSisaQuwGAP8Ae7jyIWOhmYNRylK8ns"
