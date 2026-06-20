@@ -1,22 +1,35 @@
 import type { Request, Response, NextFunction } from "express";
 
-export interface AuthenticatedRequest extends Request {
-  user: { id: string; name: string };
-}
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? "";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const userId = req.headers["x-replit-user-id"];
-  const userName = req.headers["x-replit-user-name"];
+  const authHeader = req.headers.authorization;
 
-  if (!userId || !userName) {
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorised" });
     return;
   }
 
-  (req as AuthenticatedRequest).user = {
-    id: String(userId),
-    name: String(userName),
-  };
+  const token = authHeader.slice(7);
 
-  next();
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      res.status(401).json({ error: "Invalid or expired session" });
+      return;
+    }
+
+    const user = await response.json();
+    (req as Request & { user: unknown }).user = user;
+    next();
+  } catch {
+    res.status(401).json({ error: "Authentication failed" });
+  }
 }
