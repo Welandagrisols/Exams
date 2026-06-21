@@ -1,4 +1,4 @@
-import { useGetReport, useUpdateReport, getGetReportQueryKey } from "@workspace/api-client-react";
+import { useGetReport, useUpdateReport, getGetReportQueryKey, useGetSchool } from "@workspace/api-client-react";
 import { Layout, Header } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRoute } from "wouter";
@@ -20,6 +20,8 @@ export default function StudentReport() {
   const { data: report, isLoading } = useGetReport(examId, studentId, { 
     query: { enabled: !!examId && !!studentId, queryKey: getGetReportQueryKey(examId, studentId) } 
   });
+
+  const { data: school } = useGetSchool();
   
   const [teacherComment, setTeacherComment] = useState("");
   const [principalComment, setPrincipalComment] = useState("");
@@ -116,6 +118,18 @@ export default function StudentReport() {
                 <span><strong className="text-slate-900">EXAM:</strong> {report.exam.name}</span>
                 <span><strong className="text-slate-900">TERM:</strong> {report.exam.term}</span>
                 <span><strong className="text-slate-900">YEAR:</strong> {report.exam.year}</span>
+                {(() => {
+                  const t = report.exam.term;
+                  const start = t === 1 ? school?.term1StartDate : t === 2 ? school?.term2StartDate : school?.term3StartDate;
+                  const end   = t === 1 ? school?.term1EndDate   : t === 2 ? school?.term2EndDate   : school?.term3EndDate;
+                  if (!start && !end) return null;
+                  return (
+                    <span>
+                      <strong className="text-slate-900">TERM DATES:</strong>{" "}
+                      {start ? formatDate(start) : "—"}&nbsp;–&nbsp;{end ? formatDate(end) : "—"}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -248,16 +262,35 @@ export default function StudentReport() {
           </div>
 
           {/* Footer Dates */}
-          <div className="p-6 md:px-10 bg-slate-800 text-slate-300 text-sm font-medium flex justify-between print:bg-transparent print:text-slate-600 print:border-t">
-            <div>
-              <span className="uppercase tracking-wider text-xs opacity-70 block mb-0.5">Closing Date</span>
-              <span className="text-white print:text-slate-900">{formatDate(report.exam.closingDate)}</span>
-            </div>
-            <div className="text-right">
-              <span className="uppercase tracking-wider text-xs opacity-70 block mb-0.5">Opening Date</span>
-              <span className="text-white print:text-slate-900">{formatDate(report.exam.openingDate)}</span>
-            </div>
-          </div>
+          {(() => {
+            const t = report.exam.term;
+            const termStart = t === 1 ? school?.term1StartDate : t === 2 ? school?.term2StartDate : school?.term3StartDate;
+            const termEnd   = t === 1 ? school?.term1EndDate   : t === 2 ? school?.term2EndDate   : school?.term3EndDate;
+            const openLabel  = termStart ? "Term Opens" : "Opening Date";
+            const closeLabel = termEnd   ? "Term Closes" : "Closing Date";
+            const openVal    = termStart ? formatDate(termStart) : formatDate(report.exam.openingDate);
+            const closeVal   = termEnd   ? formatDate(termEnd)   : formatDate(report.exam.closingDate);
+            return (
+              <div className="p-6 md:px-10 bg-slate-800 text-slate-300 text-sm font-medium flex justify-between print:bg-transparent print:text-slate-600 print:border-t">
+                <div>
+                  <span className="uppercase tracking-wider text-xs opacity-70 block mb-0.5">{closeLabel}</span>
+                  <span className="text-white print:text-slate-900">{closeVal}</span>
+                </div>
+                {(termStart || termEnd) && (
+                  <div className="text-center">
+                    <span className="uppercase tracking-wider text-xs opacity-70 block mb-0.5">Term {t}</span>
+                    <span className="text-white print:text-slate-900 text-xs">
+                      {termStart ? formatDate(termStart) : "—"} – {termEnd ? formatDate(termEnd) : "—"}
+                    </span>
+                  </div>
+                )}
+                <div className="text-right">
+                  <span className="uppercase tracking-wider text-xs opacity-70 block mb-0.5">{openLabel}</span>
+                  <span className="text-white print:text-slate-900">{openVal}</span>
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
 
