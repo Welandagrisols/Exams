@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, examsTable, classesTable, scoresTable, learningAreasTable, studentsTable } from "@workspace/db";
+import { db, examsTable, classesTable, scoresTable, learningAreasTable, studentsTable, schoolTable } from "@workspace/db";
 import { GetAnalyticsParams, GetAnalyticsResponse } from "@workspace/api-zod";
-import { getRubricGrade, getRubricPoints, getOverallGrade, emptyDistribution, type RubricGrade } from "../lib/rubric";
+import { getRubricGrade, getRubricPoints, getOverallGrade, emptyDistribution, thresholdsFromSchool, type RubricGrade } from "../lib/rubric";
 
 const router: IRouter = Router();
 
@@ -14,26 +14,31 @@ router.get("/analytics/:examId", async (req, res): Promise<void> => {
   }
   const { examId } = params.data;
 
-  const [exam] = await db
-    .select({
-      id: examsTable.id,
-      name: examsTable.name,
-      classId: examsTable.classId,
-      className: classesTable.name,
-      year: examsTable.year,
-      term: examsTable.term,
-      openingDate: examsTable.openingDate,
-      closingDate: examsTable.closingDate,
-      status: examsTable.status,
-    })
-    .from(examsTable)
-    .leftJoin(classesTable, eq(classesTable.id, examsTable.classId))
-    .where(eq(examsTable.id, examId));
+  const [[schoolRow], [exam]] = await Promise.all([
+    db.select().from(schoolTable).limit(1),
+    db
+      .select({
+        id: examsTable.id,
+        name: examsTable.name,
+        classId: examsTable.classId,
+        className: classesTable.name,
+        year: examsTable.year,
+        term: examsTable.term,
+        openingDate: examsTable.openingDate,
+        closingDate: examsTable.closingDate,
+        status: examsTable.status,
+      })
+      .from(examsTable)
+      .leftJoin(classesTable, eq(classesTable.id, examsTable.classId))
+      .where(eq(examsTable.id, examId)),
+  ]);
 
   if (!exam) {
     res.status(404).json({ error: "Exam not found" });
     return;
   }
+
+  const thresholds = thresholdsFromSchool(schoolRow);
 
   const allScores = await db
     .select({
@@ -88,13 +93,13 @@ router.get("/analytics/:examId", async (req, res): Promise<void> => {
         sum += m;
         if (m > highest) highest = m;
         if (m < lowest) lowest = m;
-        const grade = getRubricGrade(m, maxMarks) as RubricGrade;
+        const grade = getRubricGrade(m, maxMarks, thresholds) as RubricGrade;
         dist[grade]++;
         overallDist[grade]++;
       }
       const mean = marks.length > 0 ? sum / marks.length : 0;
       const meanPercentage = (mean / maxMarks) * 100;
-      const meanGrade = getRubricGrade(mean, maxMarks);
+      const meanGrade = getRubricGrade(mean, maxMarks, thresholds);
       const meanPoints = getRubricPoints(meanGrade);
       allAreaMeanPcts.push(meanPercentage);
       return {

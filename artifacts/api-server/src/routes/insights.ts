@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, examsTable, classesTable, scoresTable, learningAreasTable, studentsTable } from "@workspace/db";
+import { db, examsTable, classesTable, scoresTable, learningAreasTable, studentsTable, schoolTable } from "@workspace/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getRubricGrade, getRubricPoints, getOverallGrade } from "../lib/rubric";
+import { getRubricGrade, getRubricPoints, getOverallGrade, thresholdsFromSchool } from "../lib/rubric";
 
 const router: IRouter = Router();
 
@@ -15,22 +15,27 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
     return;
   }
 
-  const [exam] = await db
-    .select({
-      id: examsTable.id,
-      name: examsTable.name,
-      term: examsTable.term,
-      year: examsTable.year,
-      className: classesTable.name,
-    })
-    .from(examsTable)
-    .leftJoin(classesTable, eq(classesTable.id, examsTable.classId))
-    .where(eq(examsTable.id, examId));
+  const [[schoolRow], [exam]] = await Promise.all([
+    db.select().from(schoolTable).limit(1),
+    db
+      .select({
+        id: examsTable.id,
+        name: examsTable.name,
+        term: examsTable.term,
+        year: examsTable.year,
+        className: classesTable.name,
+      })
+      .from(examsTable)
+      .leftJoin(classesTable, eq(classesTable.id, examsTable.classId))
+      .where(eq(examsTable.id, examId)),
+  ]);
 
   if (!exam) {
     res.status(404).json({ error: "Exam not found" });
     return;
   }
+
+  const thresholds = thresholdsFromSchool(schoolRow);
 
   const allScores = await db
     .select({
@@ -62,15 +67,18 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
   const subjectSummaries = Array.from(areaMap.values()).map(area => {
     const mean = area.marks.reduce((s, m) => s + m, 0) / area.marks.length;
     const pct = (mean / area.maxMarks) * 100;
-    const grade = getRubricGrade(mean, area.maxMarks);
-    const below = area.marks.filter(m => getRubricGrade(m, area.maxMarks).startsWith("AE") || getRubricGrade(m, area.maxMarks).startsWith("BE")).length;
+    const grade = getRubricGrade(mean, area.maxMarks, thresholds);
+    const below = area.marks.filter(m =>
+      getRubricGrade(m, area.maxMarks, thresholds).startsWith("AE") ||
+      getRubricGrade(m, area.maxMarks, thresholds).startsWith("BE")
+    ).length;
     return { subject: area.name, meanPct: pct.toFixed(1), grade, studentsBelow: below, total: area.marks.length };
   });
 
   const studentMap = new Map<number, { totalPts: number; count: number }>();
   for (const s of allScores) {
     const m = parseFloat(s.marks as unknown as string);
-    const grade = getRubricGrade(m, s.maxMarks ?? 100);
+    const grade = getRubricGrade(m, s.maxMarks ?? 100, thresholds);
     const pts = getRubricPoints(grade);
     if (!studentMap.has(s.studentId)) studentMap.set(s.studentId, { totalPts: 0, count: 0 });
     const entry = studentMap.get(s.studentId)!;
@@ -91,13 +99,26 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
   const totalStudents = studentMap.size;
   const overallMeanPct = subjectSummaries.reduce((s, x) => s + parseFloat(x.meanPct), 0) / subjectSummaries.length;
 
-  const prompt = `You are an educational data analyst for a Kenyan CBC (Competency Based Curriculum) junior secondary school. 
+  const rubricScale = [
+    `EE2 ≥ ${thresholds.ee2}%`,
+    `EE1 ≥ ${thresholds.ee1}%`,
+    `ME2 ≥ ${thresholds.me2}%`,
+    `ME1 ≥ ${thresholds.me1}%`,
+    `AE2 ≥ ${thresholds.ae2}%`,
+    `AE1 ≥ ${thresholds.ae1}%`,
+    `BE2 ≥ ${thresholds.be2}%`,
+    `BE1 < ${thresholds.be2}%`,
+  ].join(" | ");
+
+  const prompt = `You are an educational data analyst for a Kenyan CBC (Competency Based Curriculum) junior secondary school.
 Analyze this exam data and provide concise, actionable insights for the class teacher and principal.
 
 Exam: ${exam.name} — ${exam.className} — Term ${exam.term}, ${exam.year}
 Total Students: ${totalStudents}
 Overall Class Mean: ${overallMeanPct.toFixed(1)}%
 Grade Distribution: EE: ${EE}, ME: ${ME}, AE: ${AE}, BE: ${BE}
+
+Grading Scale (school-configured): ${rubricScale}
 
 Subject Performance:
 ${subjectSummaries.map(s => `- ${s.subject}: ${s.meanPct}% (${s.grade}) — ${s.studentsBelow}/${s.total} students below expectation`).join("\n")}
