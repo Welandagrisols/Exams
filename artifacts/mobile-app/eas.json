@@ -7,11 +7,19 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://bf4936f4-fdca-4f02-9e6d-af538f0bed45-00-w5b5x6dchh1e.picard.replit.dev",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xxcaqxycwinuquphocge.supabase.co"
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://bf4936f4-fdca-4f02-9e6d-af538f0bed45-00-w5b5x6dchh1e.picard.replit.dev",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xxcaqxycwinuquphocge.supabase.co"
       }
     }
   },

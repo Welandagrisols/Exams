@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "iVoVGdUaQIhDITznlnFkd"
+uri = "file://edumetrics-build-apk.tar.gz"
+type = "unspecified"
+title = "EduMetrics APK Build Script + eas.json"
