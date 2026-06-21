@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, studentsTable, classesTable, examsTable, schoolTable, scoresTable, learningAreasTable, reportCommentsTable } from "@workspace/db";
 import { GetReportParams, UpdateReportParams, UpdateReportBody } from "@workspace/api-zod";
-import { getRubricGrade, getRubricPoints, getOverallGrade } from "../lib/rubric";
+import { getRubricGrade, getRubricPoints, getOverallGrade, thresholdsFromSchool } from "../lib/rubric";
 
 const router: IRouter = Router();
 
@@ -61,11 +61,13 @@ async function buildReport(examId: number, studentId: number) {
     .where(and(eq(scoresTable.examId, examId), eq(scoresTable.studentId, studentId)))
     .orderBy(learningAreasTable.sortOrder, learningAreasTable.name);
 
+  const thresholds = thresholdsFromSchool(school);
+
   const subjects = scoreRows.map((r) => {
     const marks = parseFloat(r.marks as unknown as string);
     const maxMarks = r.maxMarks ?? 100;
     const percentage = (marks / maxMarks) * 100;
-    const grade = getRubricGrade(marks, maxMarks);
+    const grade = getRubricGrade(marks, maxMarks, thresholds);
     return {
       learningAreaId: r.learningAreaId!,
       learningAreaName: r.learningAreaName!,
