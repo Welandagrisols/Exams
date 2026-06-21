@@ -615,6 +615,32 @@ components:
           type: ["string", "null"]
         logoUrl:
           type: ["string", "null"]
+        term1StartDate:
+          type: ["string", "null"]
+        term1EndDate:
+          type: ["string", "null"]
+        term2StartDate:
+          type: ["string", "null"]
+        term2EndDate:
+          type: ["string", "null"]
+        term3StartDate:
+          type: ["string", "null"]
+        term3EndDate:
+          type: ["string", "null"]
+        rubricEe2:
+          type: ["integer", "null"]
+        rubricEe1:
+          type: ["integer", "null"]
+        rubricMe2:
+          type: ["integer", "null"]
+        rubricMe1:
+          type: ["integer", "null"]
+        rubricAe2:
+          type: ["integer", "null"]
+        rubricAe1:
+          type: ["integer", "null"]
+        rubricBe2:
+          type: ["integer", "null"]
 
     SchoolInput:
       type: object
@@ -627,6 +653,32 @@ components:
           type: string
         principalName:
           type: string
+        term1StartDate:
+          type: string
+        term1EndDate:
+          type: string
+        term2StartDate:
+          type: string
+        term2EndDate:
+          type: string
+        term3StartDate:
+          type: string
+        term3EndDate:
+          type: string
+        rubricEe2:
+          type: integer
+        rubricEe1:
+          type: integer
+        rubricMe2:
+          type: integer
+        rubricMe1:
+          type: integer
+        rubricAe2:
+          type: integer
+        rubricAe1:
+          type: integer
+        rubricBe2:
+          type: integer
 
     Class:
       type: object
