@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { ErrorBoundary } from "@/components/error-boundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import AuthCallback from "@/pages/auth/callback";
@@ -55,45 +56,49 @@ function AppRoutes() {
   }
 
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/classes" component={Classes} />
-      <Route path="/classes/:classId/students" component={Students} />
-      <Route path="/classes/:classId/exams" component={ClassExams} />
-      <Route path="/exams/:examId/scores" component={ExamScores} />
-      <Route path="/exams/:examId/scoresheet" component={ScoreSheet} />
-      <Route path="/exams/:examId/ocr-upload" component={OcrUpload} />
-      <Route path="/exams/:examId/analytics" component={ExamAnalytics} />
-      <Route path="/exams/:examId/rankings" component={ExamRankings} />
-      <Route path="/exams/:examId/print-reports" component={PrintAllReports} />
-      <Route path="/reports/:examId/:studentId" component={StudentReport} />
-      <Route path="/learning-areas" component={LearningAreas} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/trends/class/:classId" component={ClassTrends} />
-      <Route path="/trends/student/:studentId" component={StudentTrends} />
-      <Route path="/students/import" component={ImportStudents} />
-      <Route path="/messages" component={MessagesList} />
-      <Route path="/messages/compose" component={ComposeMessage} />
-      <Route path="/messages/:id" component={MessageDetail} />
-      <Route path="/login"><Redirect to="/" /></Route>
-      <Route component={NotFound} />
-    </Switch>
+    <ErrorBoundary>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/classes" component={Classes} />
+        <Route path="/classes/:classId/students" component={Students} />
+        <Route path="/classes/:classId/exams" component={ClassExams} />
+        <Route path="/exams/:examId/scores" component={ExamScores} />
+        <Route path="/exams/:examId/scoresheet" component={ScoreSheet} />
+        <Route path="/exams/:examId/ocr-upload" component={OcrUpload} />
+        <Route path="/exams/:examId/analytics" component={ExamAnalytics} />
+        <Route path="/exams/:examId/rankings" component={ExamRankings} />
+        <Route path="/exams/:examId/print-reports" component={PrintAllReports} />
+        <Route path="/reports/:examId/:studentId" component={StudentReport} />
+        <Route path="/learning-areas" component={LearningAreas} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/trends/class/:classId" component={ClassTrends} />
+        <Route path="/trends/student/:studentId" component={StudentTrends} />
+        <Route path="/students/import" component={ImportStudents} />
+        <Route path="/messages" component={MessagesList} />
+        <Route path="/messages/compose" component={ComposeMessage} />
+        <Route path="/messages/:id" component={MessageDetail} />
+        <Route path="/login"><Redirect to="/" /></Route>
+        <Route component={NotFound} />
+      </Switch>
+    </ErrorBoundary>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <AppRoutes />
-          </WouterRouter>
-          <Toaster />
-          <PwaInstallPrompt />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary fallbackTitle="EduMetrics failed to load">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AppRoutes />
+            </WouterRouter>
+            <Toaster />
+            <PwaInstallPrompt />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
