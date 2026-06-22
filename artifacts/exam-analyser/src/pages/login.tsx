@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-type Mode = "options" | "password" | "email" | "email_sent";
+type Mode = "options" | "password" | "signup" | "email" | "email_sent" | "signup_sent";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("options");
@@ -10,16 +10,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const reset = () => { setError(null); setMode("options"); setPassword(""); };
+
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) return;
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    }
+    if (error) { setError(error.message); setLoading(false); }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) { setError(error.message); setLoading(false); }
+    else { setMode("signup_sent"); setLoading(false); }
   };
 
   const handleGoogleSignIn = async () => {
@@ -45,26 +58,47 @@ export default function LoginPage() {
     else { setMode("email_sent"); setLoading(false); }
   };
 
-  const reset = () => { setError(null); setMode("options"); };
+  const Logo = () => (
+    <div className="flex flex-col items-center gap-2">
+      <div className="w-14 h-14 rounded-full bg-[#1e3a5f] flex items-center justify-center mb-1">
+        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 21H3a12.083 12.083 0 012.84-10.422L12 14z" />
+        </svg>
+      </div>
+      <h1 className="text-2xl font-bold text-[#1e3a5f]">EduMetrics</h1>
+      <p className="text-sm text-gray-500">School Exam Management Portal</p>
+    </div>
+  );
+
+  const BackBtn = ({ label = "← Back" }: { label?: string }) => (
+    <button type="button" onClick={reset} className="text-xs text-gray-400 text-center hover:text-gray-600">{label}</button>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#1e3a5f]">
       <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-sm flex flex-col items-center gap-6">
-
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-14 rounded-full bg-[#1e3a5f] flex items-center justify-center mb-1">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 21H3a12.083 12.083 0 012.84-10.422L12 14z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-[#1e3a5f]">EduMetrics</h1>
-          <p className="text-sm text-gray-500">School Exam Management Portal</p>
-        </div>
-
+        <Logo />
         <div className="w-full h-px bg-gray-100" />
 
-        {/* ── Email sent ── */}
+        {/* ── Signup confirmation ── */}
+        {mode === "signup_sent" && (
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-800">Check your email</p>
+            <p className="text-xs text-gray-500">
+              We sent a confirmation link to <span className="font-medium text-[#1e3a5f]">{email}</span>.<br />
+              Click the link to verify your account and sign in.
+            </p>
+            <button onClick={reset} className="text-xs text-[#1e3a5f] underline mt-1">Use a different email</button>
+          </div>
+        )}
+
+        {/* ── Magic link sent ── */}
         {mode === "email_sent" && (
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
@@ -74,27 +108,32 @@ export default function LoginPage() {
             </div>
             <p className="text-sm font-semibold text-gray-800">Check your email</p>
             <p className="text-xs text-gray-500">
-              We sent a sign-in link to <span className="font-medium text-[#1e3a5f]">{email}</span>.<br />
+              Sign-in link sent to <span className="font-medium text-[#1e3a5f]">{email}</span>.<br />
               Click the link in the email to log in.
             </p>
             <button onClick={reset} className="text-xs text-[#1e3a5f] underline mt-1">Use a different method</button>
           </div>
         )}
 
-        {/* ── Option picker ── */}
+        {/* ── Options ── */}
         {mode === "options" && (
           <div className="flex flex-col gap-3 w-full">
             <p className="text-sm text-gray-600 font-medium text-center">Sign in to your account</p>
 
-            {/* Email + password — primary for testing */}
-            <button
-              onClick={() => setMode("password")}
-              className="w-full flex items-center justify-center gap-3 bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors"
-            >
+            <button onClick={() => setMode("password")}
+              className="w-full flex items-center justify-center gap-3 bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
               Sign in with password
+            </button>
+
+            <button onClick={() => setMode("signup")}
+              className="w-full flex items-center justify-center gap-3 border border-[#1e3a5f] text-[#1e3a5f] rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#1e3a5f]/5 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              Create an account
             </button>
 
             <div className="flex items-center gap-3">
@@ -103,11 +142,8 @@ export default function LoginPage() {
               <div className="flex-1 h-px bg-gray-100" />
             </div>
 
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
-            >
+            <button onClick={handleGoogleSignIn} disabled={loading}
+              className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60">
               {loading
                 ? <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 : <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -120,10 +156,8 @@ export default function LoginPage() {
               Continue with Google
             </button>
 
-            <button
-              onClick={() => setMode("email")}
-              className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={() => setMode("email")}
+              className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -134,60 +168,64 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* ── Password form ── */}
+        {/* ── Sign in with password ── */}
         {mode === "password" && (
           <form onSubmit={handlePasswordLogin} className="flex flex-col gap-3 w-full">
             <p className="text-sm text-gray-600 font-medium text-center">Sign in with password</p>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="teacher@school.edu"
-              required
-              autoFocus
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={loading || !email.trim() || !password}
-              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60"
-            >
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="teacher@school.edu" required autoFocus
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Password" required
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <button type="submit" disabled={loading || !email.trim() || !password}
+              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60">
               {loading ? "Signing in…" : "Sign in"}
             </button>
-            <button type="button" onClick={reset} className="text-xs text-gray-400 text-center hover:text-gray-600">← Back</button>
+            <button type="button" onClick={() => setMode("signup")}
+              className="text-xs text-[#1e3a5f] text-center hover:underline">
+              Don't have an account? Create one
+            </button>
+            <BackBtn />
             {error && <p className="text-xs text-red-500 text-center">{error}</p>}
           </form>
         )}
 
-        {/* ── Magic link form ── */}
+        {/* ── Create account ── */}
+        {mode === "signup" && (
+          <form onSubmit={handleSignUp} className="flex flex-col gap-3 w-full">
+            <p className="text-sm text-gray-600 font-medium text-center">Create your account</p>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="teacher@school.edu" required autoFocus
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Choose a password (min 6 chars)" required minLength={6}
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <button type="submit" disabled={loading || !email.trim() || password.length < 6}
+              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60">
+              {loading ? "Creating account…" : "Create account"}
+            </button>
+            <button type="button" onClick={() => setMode("password")}
+              className="text-xs text-[#1e3a5f] text-center hover:underline">
+              Already have an account? Sign in
+            </button>
+            <BackBtn />
+            {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+          </form>
+        )}
+
+        {/* ── Magic link ── */}
         {mode === "email" && (
           <form onSubmit={handleMagicLink} className="flex flex-col gap-3 w-full">
             <p className="text-sm text-gray-600 font-medium text-center">Enter your email</p>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="teacher@school.edu"
-              required
-              autoFocus
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={loading || !email.trim()}
-              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60"
-            >
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="teacher@school.edu" required autoFocus
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <button type="submit" disabled={loading || !email.trim()}
+              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60">
               {loading ? "Sending…" : "Send sign-in link"}
             </button>
-            <button type="button" onClick={reset} className="text-xs text-gray-400 text-center hover:text-gray-600">← Back</button>
+            <BackBtn />
             {error && <p className="text-xs text-red-500 text-center">{error}</p>}
           </form>
         )}
