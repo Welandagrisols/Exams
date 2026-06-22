@@ -171,7 +171,7 @@ export default function OcrUpload() {
                 {loading && (
                   <div className="flex items-center gap-3 text-sm text-muted-foreground p-4 bg-muted/30 rounded-lg">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span>GPT-4o is reading every mark from your score sheet. This takes 10–20 seconds…</span>
+                    <span>Gemini AI is reading every mark from your score sheet. This takes 10–20 seconds…</span>
                   </div>
                 )}
               </CardContent>
