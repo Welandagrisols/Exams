@@ -7,6 +7,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { ErrorBoundary } from "@/components/error-boundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
+import AuthCallback from "@/pages/auth/callback";
 
 import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
@@ -48,6 +49,7 @@ function AppRoutes() {
     return (
       <Switch>
         <Route path="/login" component={LoginPage} />
+        <Route path="/auth/callback" component={AuthCallback} />
         <Route><Redirect to="/login" /></Route>
       </Switch>
     );

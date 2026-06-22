@@ -13,9 +13,6 @@ export default function AuthCallback() {
       navigate(path);
     };
 
-    // onAuthStateChange fires once Supabase finishes parsing the URL tokens.
-    // With detectSessionInUrl:true the client processes the hash / code
-    // automatically and raises SIGNED_IN before getSession() reflects it.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         go("/");
@@ -24,13 +21,10 @@ export default function AuthCallback() {
       }
     });
 
-    // Fallback: if a session already exists when the callback is mounted
-    // (e.g. user refreshed the page) skip waiting for the event.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) go("/");
     });
 
-    // Safety net: if nothing resolves within 8 seconds, send to login.
     const timer = setTimeout(() => go("/login"), 8000);
 
     return () => {
