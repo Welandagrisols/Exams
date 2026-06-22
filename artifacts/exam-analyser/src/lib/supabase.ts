@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 declare const __SUPABASE_URL__: string;
 declare const __SUPABASE_ANON_KEY__: string;
@@ -9,4 +10,9 @@ export const supabase = createClient(__SUPABASE_URL__, __SUPABASE_ANON_KEY__, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+});
+
+setAuthTokenGetter(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 });

@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 interface AuthContextValue {
   user: User | null;
@@ -31,14 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    setAuthTokenGetter(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session?.access_token ?? null;
-    });
-    return () => setAuthTokenGetter(null);
   }, []);
 
   const signOut = async () => {
