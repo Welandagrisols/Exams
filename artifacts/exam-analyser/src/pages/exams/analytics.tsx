@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRoute } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor, getRubricHexColor } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw } from "lucide-react";
@@ -252,6 +252,51 @@ export default function ExamAnalytics() {
                           <Cell key={`cell-${index}`} fill={getRubricHexColor(entry.meanGrade)} />
                         ))}
                       </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Per-Subject Grade Distribution */}
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle>Grade Distribution by Subject</CardTitle>
+                <p className="text-sm text-muted-foreground">Number of students at each CBC performance level per subject</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[320px] w-full p-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={analytics.learningAreas.map(la => ({
+                        name: la.abbreviation,
+                        BE1: la.distribution.BE1,
+                        BE2: la.distribution.BE2,
+                        AE1: la.distribution.AE1,
+                        AE2: la.distribution.AE2,
+                        ME1: la.distribution.ME1,
+                        ME2: la.distribution.ME2,
+                        EE1: la.distribution.EE1,
+                        EE2: la.distribution.EE2,
+                      }))}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
+                      <YAxis tickLine={false} axisLine={false} fontSize={12} allowDecimals={false} />
+                      <RechartsTooltip
+                        contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", fontSize: 13 }}
+                        formatter={(value: number, name: string) => value > 0 ? [`${value} student${value !== 1 ? "s" : ""}`, name] : [null, name]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+                      <Bar dataKey="BE1" stackId="a" fill="#fca5a5" name="BE1" maxBarSize={60} />
+                      <Bar dataKey="BE2" stackId="a" fill="#ef4444" name="BE2" maxBarSize={60} />
+                      <Bar dataKey="AE1" stackId="a" fill="#fde68a" name="AE1" maxBarSize={60} />
+                      <Bar dataKey="AE2" stackId="a" fill="#f59e0b" name="AE2" maxBarSize={60} />
+                      <Bar dataKey="ME1" stackId="a" fill="#93c5fd" name="ME1" maxBarSize={60} />
+                      <Bar dataKey="ME2" stackId="a" fill="#2563eb" name="ME2" maxBarSize={60} />
+                      <Bar dataKey="EE1" stackId="a" fill="#86efac" name="EE1" maxBarSize={60} />
+                      <Bar dataKey="EE2" stackId="a" fill="#16a34a" name="EE2" radius={[4, 4, 0, 0]} maxBarSize={60} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
