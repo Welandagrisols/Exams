@@ -16,3 +16,12 @@ setAuthTokenGetter(async () => {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.access_token ?? null;
 });
+
+export async function authFetch(input: string | URL, init?: RequestInit): Promise<Response> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers = new Headers(init?.headers);
+  if (session?.access_token) {
+    headers.set("authorization", `Bearer ${session.access_token}`);
+  }
+  return fetch(input, { ...init, headers });
+}

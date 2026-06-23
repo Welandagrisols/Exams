@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { authFetch } from "@/lib/supabase";
 import { useRoute, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import {
@@ -118,7 +119,7 @@ export default function MessageDetail() {
     if (recipientId) setSendingId(recipientId); else setSendingAll(true);
 
     try {
-      const res = await fetch(`/api/messages/${message.id}/send-sms`, {
+      const res = await authFetch(`/api/messages/${message.id}/send-sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(recipientId ? { recipientId } : {}),

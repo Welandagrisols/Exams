@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { authFetch } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import {
@@ -97,7 +98,7 @@ export default function Students() {
     try {
       const fd = new FormData();
       fd.append("image", file);
-      const res = await fetch("/api/ocr/student", { method: "POST", body: fd });
+      const res = await authFetch("/api/ocr/student", { method: "POST", body: fd });
       if (!res.ok) throw new Error((await res.json()).error);
       const data = await res.json();
       if (data.name) form.setValue("name", data.name);

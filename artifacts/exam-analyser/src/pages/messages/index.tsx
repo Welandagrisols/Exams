@@ -11,6 +11,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { authFetch } from "@/lib/supabase";
 
 type Message = {
   id: number;
@@ -33,7 +34,7 @@ export default function Messages() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/messages");
+      const res = await authFetch("/api/messages");
       if (!res.ok) throw new Error("Failed to load");
       setMessages(await res.json());
     } catch {
@@ -47,7 +48,7 @@ export default function Messages() {
 
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`/api/messages/${id}`, { method: "DELETE" });
+      await authFetch(`/api/messages/${id}`, { method: "DELETE" });
       setMessages(prev => prev.filter(m => m.id !== id));
       toast({ title: "Message deleted" });
     } catch {

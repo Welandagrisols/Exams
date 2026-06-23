@@ -12,6 +12,7 @@ import { useListClasses, useListStudents } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { authFetch } from "@/lib/supabase";
 import {
   Send, Users, FileText, ChevronDown, ChevronUp, AlertCircle,
   Camera, Upload, Loader2, ScanLine, Pencil, CheckCircle2, XCircle,
@@ -113,7 +114,7 @@ export default function ComposeMessage() {
     formData.append("image", file);
 
     try {
-      const res = await fetch("/api/ocr/fee-arrears", { method: "POST", body: formData });
+      const res = await authFetch("/api/ocr/fee-arrears", { method: "POST", body: formData });
       if (!res.ok) throw new Error((await res.json()).error);
       const data = await res.json();
       const entries: FeeEntry[] = (data.entries ?? []).map((e: any) => ({
@@ -177,7 +178,7 @@ export default function ComposeMessage() {
         };
       }
 
-      const res = await fetch("/api/messages", {
+      const res = await authFetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

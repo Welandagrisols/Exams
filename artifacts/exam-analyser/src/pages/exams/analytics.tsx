@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { authFetch } from "@/lib/supabase";
 
 function AiInsightsCard({ examId }: { examId: number }) {
   const [text, setText] = useState<string>("");
@@ -21,7 +22,7 @@ function AiInsightsCard({ examId }: { examId: number }) {
     setLoading(true);
     setGenerated(true);
     try {
-      const res = await fetch(`/api/insights/${examId}`);
+      const res = await authFetch(`/api/insights/${examId}`);
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error ?? `Request failed (${res.status})`);

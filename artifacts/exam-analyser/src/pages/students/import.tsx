@@ -11,6 +11,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { authFetch } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type PreviewRow = {
@@ -75,7 +76,7 @@ export default function ImportStudents() {
       const form = new FormData();
       form.append("file", file);
       form.append("classId", classId);
-      const res = await fetch("/api/students/import/preview", { method: "POST", body: form });
+      const res = await authFetch("/api/students/import/preview", { method: "POST", body: form });
       if (!res.ok) throw new Error((await res.json()).error);
       setPreview(await res.json());
     } catch (err: any) {
@@ -87,7 +88,7 @@ export default function ImportStudents() {
     if (!classId) return;
     setImporting(true);
     try {
-      const res = await fetch("/api/students/import/confirm", {
+      const res = await authFetch("/api/students/import/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ classId: parseInt(classId), rows: rows.filter(r => r.valid) }),
@@ -105,7 +106,7 @@ export default function ImportStudents() {
     if (!scanResult || !classId) return;
     setScanImporting(true);
     try {
-      const res = await fetch("/api/students/import/confirm", {
+      const res = await authFetch("/api/students/import/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ classId: parseInt(classId), rows: scanResult.students.filter(r => r.valid) }),
@@ -134,7 +135,7 @@ export default function ImportStudents() {
     try {
       const form = new FormData();
       form.append("image", scanFile);
-      const res = await fetch("/api/ocr/student-list", { method: "POST", body: form });
+      const res = await authFetch("/api/ocr/student-list", { method: "POST", body: form });
       if (!res.ok) throw new Error((await res.json()).error);
       const data: ScanResult = await res.json();
       setScanResult(data);

@@ -9,6 +9,7 @@ import { Camera, Upload, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { authFetch } from "@/lib/supabase";
 
 type OcrMark = { learningAreaId: number; subjectName: string; maxMarks: number; marks: number | null };
 type OcrRow = { studentId: number | null; studentName: string; admissionNo: string; marks: OcrMark[] };
@@ -56,7 +57,7 @@ export default function OcrUpload() {
     try {
       const form = new FormData();
       form.append("image", file);
-      const res = await fetch(`/api/exams/${examId}/ocr-upload`, { method: "POST", body: form });
+      const res = await authFetch(`/api/exams/${examId}/ocr-upload`, { method: "POST", body: form });
       if (!res.ok) throw new Error((await res.json()).error);
       const data: OcrResult = await res.json();
       setResult(data);
