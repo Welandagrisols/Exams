@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getRubricColor, formatDate } from "@/lib/utils";
 import { Printer, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/supabase";
 
 type Subject = {
   learningAreaId: number;
@@ -152,13 +153,26 @@ export default function PrintAllReports() {
   const [error, setError] = useState<string | null>(null);
   const [printed, setPrinted] = useState(false);
 
+  const selectedIds = (() => {
+    const raw = new URLSearchParams(window.location.search).get("students");
+    if (!raw) return null;
+    const ids = raw.split(",").map(s => parseInt(s)).filter(n => !isNaN(n));
+    return ids.length > 0 ? new Set(ids) : null;
+  })();
+
   useEffect(() => {
     if (!examId) return;
-    fetch(`/api/reports/${examId}/all`)
+    authFetch(`/api/reports/${examId}/all`)
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setReports(data);
-        else setError(data.error ?? "Failed to load reports");
+        if (Array.isArray(data)) {
+          const filtered = selectedIds
+            ? data.filter((r: Report) => selectedIds.has(r.student.id))
+            : data;
+          setReports(filtered);
+        } else {
+          setError(data.error ?? "Failed to load reports");
+        }
       })
       .catch(() => setError("Failed to load reports"))
       .finally(() => setLoading(false));
@@ -172,9 +186,13 @@ export default function PrintAllReports() {
     }
   }, [loading, reports, printed]);
 
+  const isFiltered = selectedIds !== null;
+  const printLabel = isFiltered
+    ? `Print ${reports.length} Selected Report${reports.length !== 1 ? "s" : ""}`
+    : "Print All Reports";
+
   return (
     <div>
-      {/* Toolbar — hidden when printing */}
       <div className="print:hidden bg-white border-b px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="gap-2">
@@ -183,18 +201,21 @@ export default function PrintAllReports() {
           <span className="text-muted-foreground text-sm">|</span>
           {loading
             ? <span className="text-sm text-muted-foreground">Loading reports…</span>
-            : <span className="text-sm font-medium">{reports.length} report{reports.length !== 1 ? "s" : ""} — sorted by rank</span>
+            : <span className="text-sm font-medium">
+                {reports.length} report{reports.length !== 1 ? "s" : ""}
+                {isFiltered ? " (selected)" : " — sorted by rank"}
+              </span>
           }
         </div>
         <Button onClick={() => window.print()} disabled={loading || reports.length === 0} className="gap-2">
-          <Printer className="h-4 w-4" /> Print All Reports
+          <Printer className="h-4 w-4" /> {printLabel}
         </Button>
       </div>
 
       {loading && (
         <div className="print:hidden flex flex-col items-center justify-center min-h-[60vh] gap-4 text-muted-foreground">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-base font-medium">Loading all student reports…</p>
+          <p className="text-base font-medium">Loading student reports…</p>
           <p className="text-sm">This may take a few seconds</p>
         </div>
       )}
@@ -211,7 +232,6 @@ export default function PrintAllReports() {
         </div>
       )}
 
-      {/* All report cards — one per page when printed */}
       <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto print:p-0 print:max-w-none print:space-y-0">
         {reports.map((report, i) => (
           <div key={report.student.id} className={i < reports.length - 1 ? "print:break-after-page" : ""}>
