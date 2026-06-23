@@ -90,7 +90,7 @@ function ReportCard({ report }: { report: Report }) {
                   {sub.percentage.toFixed(0)}%
                 </td>
                 <td className="border border-slate-200 px-4 py-2.5 text-center">
-                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold ${getRubricColor(sub.rubricGrade)} print:border print:bg-transparent`}>
+                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold ${getRubricColor(sub.rubricGrade)}`}>
                     {sub.rubricGrade}
                   </span>
                 </td>
@@ -242,14 +242,19 @@ export default function PrintAllReports() {
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body * { visibility: hidden; }
-          .report-card, .report-card * { visibility: visible; }
-          .bg-slate-800 { background-color: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .text-white { color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .bg-green-100 { background-color: #dcfce7 !important; color: #166534 !important; }
-          .bg-blue-100 { background-color: #dbeafe !important; color: #1e40af !important; }
-          .bg-amber-100 { background-color: #fef3c7 !important; color: #92400e !important; }
-          .bg-red-100 { background-color: #fee2e2 !important; color: #991b1b !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .print-hide { display: none !important; }
+          .bg-slate-800 { background-color: #1e293b !important; color: white !important; }
+          .bg-slate-100 { background-color: #f1f5f9 !important; }
+          .bg-slate-50  { background-color: #f8fafc !important; }
+          .bg-green-100  { background-color: #dcfce7 !important; color: #166534 !important; }
+          .text-green-800 { color: #166534 !important; }
+          .bg-blue-100   { background-color: #dbeafe !important; color: #1e40af !important; }
+          .text-blue-800  { color: #1e40af !important; }
+          .bg-amber-100  { background-color: #fef3c7 !important; color: #92400e !important; }
+          .text-amber-800 { color: #92400e !important; }
+          .bg-red-100    { background-color: #fee2e2 !important; color: #991b1b !important; }
+          .text-red-800   { color: #991b1b !important; }
         }
       `}} />
     </div>

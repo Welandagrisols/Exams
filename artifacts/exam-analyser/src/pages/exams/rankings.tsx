@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRoute, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor } from "@/lib/utils";
-import { FileText, Trophy, TrendingUp, Printer, CheckSquare, Square } from "lucide-react";
+import { FileText, Trophy, TrendingUp, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useCallback } from "react";

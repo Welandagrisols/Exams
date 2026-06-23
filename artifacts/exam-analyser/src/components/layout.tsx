@@ -21,7 +21,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col w-64 flex-shrink-0 relative z-20"
+      className="hidden md:flex print:hidden flex-col w-64 flex-shrink-0 relative z-20"
       style={{ backgroundColor: SIDEBAR_BG }}
     >
       {/* Logo */}
@@ -92,7 +92,7 @@ export function BottomNav() {
   const items = [...NAV_ITEMS, { href: "/settings", label: "Settings", icon: Settings }];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-white pb-safe z-50 shadow-lg">
+    <nav className="md:hidden print:hidden fixed bottom-0 left-0 right-0 border-t bg-white pb-safe z-50 shadow-lg">
       <div className="flex justify-around items-center h-16 px-2">
         {items.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
