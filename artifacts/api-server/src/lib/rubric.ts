@@ -41,25 +41,25 @@ export function getRubricGrade(marks: number, maxMarks: number, t: RubricThresho
 
 export function getRubricPoints(grade: RubricGrade): number {
   switch (grade) {
-    case "EE2": return 4.0;
-    case "EE1": return 3.5;
-    case "ME2": return 3.0;
-    case "ME1": return 2.5;
-    case "AE2": return 2.0;
-    case "AE1": return 1.5;
-    case "BE2": return 1.0;
-    case "BE1": return 0.5;
+    case "EE2": return 8;
+    case "EE1": return 7;
+    case "ME2": return 6;
+    case "ME1": return 5;
+    case "AE2": return 4;
+    case "AE1": return 3;
+    case "BE2": return 2;
+    case "BE1": return 1;
   }
 }
 
 export function getOverallGrade(avgPoints: number): RubricGrade {
-  if (avgPoints >= 3.75) return "EE2";
-  if (avgPoints >= 3.25) return "EE1";
-  if (avgPoints >= 2.75) return "ME2";
-  if (avgPoints >= 2.25) return "ME1";
-  if (avgPoints >= 1.75) return "AE2";
-  if (avgPoints >= 1.25) return "AE1";
-  if (avgPoints >= 0.75) return "BE2";
+  if (avgPoints >= 7.5) return "EE2";
+  if (avgPoints >= 6.5) return "EE1";
+  if (avgPoints >= 5.5) return "ME2";
+  if (avgPoints >= 4.5) return "ME1";
+  if (avgPoints >= 3.5) return "AE2";
+  if (avgPoints >= 2.5) return "AE1";
+  if (avgPoints >= 1.5) return "BE2";
   return "BE1";
 }
 
