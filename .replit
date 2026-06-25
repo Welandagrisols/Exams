@@ -61,7 +61,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 pnpm --filter @workspace/mobile-app run start"
+args = "cd artifacts/mobile-app && pnpm install --frozen-lockfile && pnpm start"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
