@@ -25,6 +25,7 @@ import ImportStudents from "@/pages/students/import";
 import ScoreSheet from "@/pages/exams/scoresheet";
 import OcrUpload from "@/pages/exams/ocr-upload";
 import PrintAllReports from "@/pages/exams/print-reports";
+import BulkCreateExam from "@/pages/exams/bulk-create";
 import MessagesList from "@/pages/messages/index";
 import ComposeMessage from "@/pages/messages/compose";
 import MessageDetail from "@/pages/messages/detail";
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="/exams/:examId/ocr-upload" component={OcrUpload} />
         <Route path="/exams/:examId/analytics" component={ExamAnalytics} />
         <Route path="/exams/:examId/rankings" component={ExamRankings} />
+        <Route path="/exams/bulk-create" component={BulkCreateExam} />
         <Route path="/exams/:examId/print-reports" component={PrintAllReports} />
         <Route path="/reports/:examId/:studentId" component={StudentReport} />
         <Route path="/learning-areas" component={LearningAreas} />

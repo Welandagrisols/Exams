@@ -2,7 +2,7 @@ import { useListClasses, useCreateClass, useDeleteClass } from "@workspace/api-c
 import { Layout, Header } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, BookOpen, TrendingUp, Trash2 } from "lucide-react";
+import { Plus, Users, BookOpen, TrendingUp, Trash2, Layers } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getListClassesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -28,6 +29,7 @@ export default function Classes() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   
   const createClass = useCreateClass({
     mutation: {
@@ -61,81 +63,62 @@ export default function Classes() {
     <Layout>
       <Header title="Classes" />
       <div className="p-4 md:p-6 max-w-5xl mx-auto w-full space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3 flex-wrap">
           <p className="text-muted-foreground text-sm">Manage school classes and streams.</p>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" /> Add Class
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Class</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/exams/bulk-create")} className="gap-2">
+              <Layers className="w-4 h-4" /> Bulk Create Exam
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="w-4 h-4 mr-2" /> Add Class
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Class</DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="name" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Class Name (e.g. Grade 7A)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Grade 7A" {...field} />
-                        </FormControl>
+                        <FormControl><Input placeholder="Grade 7A" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="year"
-                      render={({ field }) => (
+                    )} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField control={form.control} name="year" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Year</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} />
-                          </FormControl>
+                          <FormControl><Input type="number" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="term"
-                      render={({ field }) => (
+                      )} />
+                      <FormField control={form.control} name="term" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Term</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="1" max="3" {...field} />
-                          </FormControl>
+                          <FormControl><Input type="number" min="1" max="3" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="classTeacherName"
-                    render={({ field }) => (
+                      )} />
+                    </div>
+                    <FormField control={form.control} name="classTeacherName" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Class Teacher</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Mr. Smith" {...field} />
-                        </FormControl>
+                        <FormControl><Input placeholder="Mr. Smith" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={createClass.isPending}>
-                    {createClass.isPending ? "Creating..." : "Create Class"}
-                  </Button>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+                    )} />
+                    <Button type="submit" className="w-full" disabled={createClass.isPending}>
+                      {createClass.isPending ? "Creating..." : "Create Class"}
+                    </Button>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {isLoading ? (

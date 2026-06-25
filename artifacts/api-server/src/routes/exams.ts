@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 import { db, examsTable, classesTable } from "@workspace/db";
 import {
   ListExamsQueryParams,
@@ -116,6 +117,49 @@ router.delete("/exams/:id", async (req, res): Promise<void> => {
     return;
   }
   res.sendStatus(204);
+});
+
+const BulkCreateExamBody = z.object({
+  name: z.string().min(1),
+  year: z.number().int().min(2000),
+  term: z.number().int().min(1).max(3),
+  openingDate: z.string().optional(),
+  closingDate: z.string().optional(),
+  status: z.enum(["draft", "active", "closed"]).default("draft"),
+  classIds: z.array(z.number().int().positive()).min(1, "Select at least one class"),
+});
+
+router.post("/exams/bulk", async (req, res): Promise<void> => {
+  const parsed = BulkCreateExamBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { classIds, ...examBase } = parsed.data;
+
+  const rows = await db
+    .insert(examsTable)
+    .values(classIds.map(classId => ({ ...examBase, classId })))
+    .returning();
+
+  const created = await db
+    .select({
+      id: examsTable.id,
+      name: examsTable.name,
+      classId: examsTable.classId,
+      className: classesTable.name,
+      year: examsTable.year,
+      term: examsTable.term,
+      openingDate: examsTable.openingDate,
+      closingDate: examsTable.closingDate,
+      status: examsTable.status,
+    })
+    .from(examsTable)
+    .leftJoin(classesTable, eq(classesTable.id, examsTable.classId))
+    .where(inArray(examsTable.id, rows.map(r => r.id)))
+    .orderBy(classesTable.name);
+
+  res.status(201).json({ exams: created, count: created.length });
 });
 
 export default router;
