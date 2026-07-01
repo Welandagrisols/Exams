@@ -1,48 +1,35 @@
 import type { Request, Response, NextFunction } from "express";
 
-export interface AuthenticatedUser {
-  id: string;
-  email?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  profileImageUrl?: string | null;
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthenticatedUser;
-    }
-  }
-}
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? "";
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const sessionUser = (req.session as any)?.user as AuthenticatedUser | undefined;
+  const authHeader = req.headers.authorization;
 
-  if (sessionUser?.id) {
-    req.user = sessionUser;
-    next();
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorised" });
     return;
   }
 
-  const userId = req.headers["x-replit-user-id"] as string | undefined;
-  const userName = req.headers["x-replit-user-name"] as string | undefined;
-  const userProfileImage = req.headers["x-replit-user-profile-image"] as string | undefined;
+  const token = authHeader.slice(7);
 
-  if (userId) {
-    const user: AuthenticatedUser = {
-      id: userId,
-      email: null,
-      firstName: userName ?? null,
-      lastName: null,
-      profileImageUrl: userProfileImage ?? null,
-    };
-    (req.session as any).user = user;
-    req.session.save(() => {});
-    req.user = user;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      res.status(401).json({ error: "Invalid or expired session" });
+      return;
+    }
+
+    const user = await response.json();
+    (req as Request & { user: unknown }).user = user;
     next();
-    return;
+  } catch {
+    res.status(401).json({ error: "Authentication failed" });
   }
-
-  res.status(401).json({ error: "Unauthorised" });
 }
