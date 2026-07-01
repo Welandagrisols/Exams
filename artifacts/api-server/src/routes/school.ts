@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
 import { db, schoolTable } from "@workspace/db";
 import { GetSchoolResponse, UpdateSchoolBody, UpdateSchoolResponse } from "@workspace/api-zod";
 
@@ -25,7 +26,7 @@ router.patch("/school", async (req, res): Promise<void> => {
     res.json(UpdateSchoolResponse.parse(created));
     return;
   }
-  const [updated] = await db.update(schoolTable).set(parsed.data).returning();
+  const [updated] = await db.update(schoolTable).set(parsed.data).where(eq(schoolTable.id, school.id)).returning();
   res.json(UpdateSchoolResponse.parse(updated));
 });
 
