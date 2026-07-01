@@ -98,6 +98,12 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
+  .local/share/pnpm/.tools/pnpm/9.15.0_tmp_121:
+    dependencies:
+      pnpm:
+        specifier: 9.15.0
+        version: 9.15.0
+
   .local/share/pnpm/.tools/pnpm/9.15.0_tmp_4369:
     dependencies:
       pnpm:
