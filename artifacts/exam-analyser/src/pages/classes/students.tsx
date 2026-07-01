@@ -1,8 +1,7 @@
 import { useListStudents, useCreateStudent, useDeleteStudent, useGetClass, getListStudentsQueryKey, getGetClassQueryKey } from "@workspace/api-client-react";
 import { Layout, Header } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, User, Trash2, Upload, Phone, ChevronDown, ChevronUp, Camera, Sparkles, Loader2, X } from "lucide-react";
+import { Plus, Users, User, Trash2, Upload, Phone, ChevronDown, ChevronUp, Camera, Sparkles, Loader2, X, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -20,7 +19,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -47,8 +45,11 @@ export default function Students() {
   const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState<number | null>(null);
+  const [localPhotos, setLocalPhotos] = useState<Record<number, string>>({});
   const scanFileRef = useRef<HTMLInputElement>(null);
   const scanCameraRef = useRef<HTMLInputElement>(null);
+  const photoFileRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -119,6 +120,35 @@ export default function Students() {
     }
   }
 
+  async function handlePhotoUpload(studentId: number, file: File) {
+    setPhotoUploading(studentId);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await authFetch(`/api/students/${studentId}/photo`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setLocalPhotos(prev => ({ ...prev, [studentId]: data.photoUrl }));
+      queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey({ classId }) });
+      toast({ title: "Passport photo saved" });
+    } catch {
+      toast({ title: "Photo upload failed", variant: "destructive" });
+    } finally {
+      setPhotoUploading(null);
+    }
+  }
+
+  async function handlePhotoRemove(studentId: number) {
+    try {
+      await authFetch(`/api/students/${studentId}/photo`, { method: "DELETE" });
+      setLocalPhotos(prev => { const n = { ...prev }; delete n[studentId]; return n; });
+      queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey({ classId }) });
+      toast({ title: "Photo removed" });
+    } catch {
+      toast({ title: "Failed to remove photo", variant: "destructive" });
+    }
+  }
+
   return (
     <Layout>
       <Header
@@ -180,7 +210,6 @@ export default function Students() {
 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Core fields */}
                     <FormField control={form.control} name="name" render={({ field }) => (
                       <FormItem><FormLabel>Full Name *</FormLabel><FormControl><Input placeholder="Jane Doe" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
@@ -201,7 +230,6 @@ export default function Students() {
                       )} />
                     </div>
 
-                    {/* Toggle extra fields */}
                     <button type="button" onClick={() => setShowExtra(v => !v)}
                       className="flex items-center gap-2 text-sm text-primary hover:underline w-full">
                       {showExtra ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -247,61 +275,118 @@ export default function Students() {
         ) : students?.length ? (
           <div className="bg-card rounded-lg border overflow-hidden">
             <div className="divide-y">
-              {students.map(student => (
-                <div key={student.id}>
-                  <div
-                    className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => setExpandedStudent(expandedStudent === student.id ? null : student.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="bg-secondary text-secondary-foreground p-2 rounded-full">
-                        <User className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{student.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {student.admissionNo} · {student.gender === 'M' ? 'Male' : student.gender === 'F' ? 'Female' : ''}
-                          {student.parentPhone && <span className="ml-2 inline-flex items-center gap-1"><Phone className="h-3 w-3" />{student.parentPhone}</span>}
+              {students.map(student => {
+                const currentPhoto = localPhotos[student.id] ?? (student as any).photoUrl as string | null;
+                return (
+                  <div key={student.id}>
+                    <div
+                      className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => setExpandedStudent(expandedStudent === student.id ? null : student.id)}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Passport photo thumbnail or avatar */}
+                        {currentPhoto ? (
+                          <img src={currentPhoto} alt={student.name} className="w-10 h-10 rounded-full object-cover border-2 border-slate-200" />
+                        ) : (
+                          <div className="bg-secondary text-secondary-foreground p-2 rounded-full">
+                            <User className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{student.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {student.admissionNo} · {student.gender === 'M' ? 'Male' : student.gender === 'F' ? 'Female' : ''}
+                            {student.parentPhone && <span className="ml-2 inline-flex items-center gap-1"><Phone className="h-3 w-3" />{student.parentPhone}</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {expandedStudent === student.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={e => e.stopPropagation()}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove Student</AlertDialogTitle>
-                            <AlertDialogDescription>This will remove {student.name} and delete all their exam scores.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteStudent.mutate({ id: student.id })}>Remove</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-
-                  {/* Expanded biodata */}
-                  {expandedStudent === student.id && (
-                    <div className="px-4 pb-4 bg-muted/20 border-t">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 text-sm">
-                        <div><div className="text-xs text-muted-foreground mb-0.5">Date of Birth</div><div className="font-medium">{student.dateOfBirth || "—"}</div></div>
-                        <div><div className="text-xs text-muted-foreground mb-0.5">Nationality</div><div className="font-medium">{student.nationality || "—"}</div></div>
-                        <div><div className="text-xs text-muted-foreground mb-0.5">Parent / Guardian</div><div className="font-medium">{student.parentName || "—"}</div></div>
-                        <div><div className="text-xs text-muted-foreground mb-0.5">Parent Phone</div><div className="font-medium">{student.parentPhone || "—"}</div></div>
-                        <div><div className="text-xs text-muted-foreground mb-0.5">Parent Email</div><div className="font-medium">{student.parentEmail || "—"}</div></div>
-                        {student.notes && <div className="col-span-2 md:col-span-3"><div className="text-xs text-muted-foreground mb-0.5">Notes</div><div className="font-medium">{student.notes}</div></div>}
+                      <div className="flex items-center gap-2">
+                        {expandedStudent === student.id ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90 hover:bg-destructive/10" onClick={e => e.stopPropagation()}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Student</AlertDialogTitle>
+                              <AlertDialogDescription>This will remove {student.name} and delete all their exam scores.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteStudent.mutate({ id: student.id })}>Remove</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Expanded biodata + passport photo upload */}
+                    {expandedStudent === student.id && (
+                      <div className="px-4 pb-4 bg-muted/20 border-t">
+                        <div className="flex gap-6 pt-4">
+                          {/* Passport photo section */}
+                          <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                            {currentPhoto ? (
+                              <img src={currentPhoto} alt={student.name} className="w-20 h-24 object-cover rounded border-2 border-slate-200" />
+                            ) : (
+                              <div className="w-20 h-24 border-2 border-dashed border-slate-300 rounded bg-slate-50 flex flex-col items-center justify-center text-slate-400 text-center">
+                                <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
+                                <span className="text-xs">Photo</span>
+                              </div>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              ref={el => { photoFileRefs.current[student.id] = el; }}
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) handlePhotoUpload(student.id, f);
+                                e.target.value = "";
+                              }}
+                            />
+                            {photoUploading === student.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <div className="flex gap-1">
+                                <button
+                                  className="text-xs text-primary hover:underline"
+                                  onClick={() => photoFileRefs.current[student.id]?.click()}
+                                >
+                                  {currentPhoto ? "Change" : "Upload"}
+                                </button>
+                                {currentPhoto && (
+                                  <>
+                                    <span className="text-slate-300">·</span>
+                                    <button
+                                      className="text-xs text-destructive hover:underline"
+                                      onClick={() => handlePhotoRemove(student.id)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Biodata fields */}
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div><div className="text-xs text-muted-foreground mb-0.5">Date of Birth</div><div className="font-medium">{student.dateOfBirth || "—"}</div></div>
+                            <div><div className="text-xs text-muted-foreground mb-0.5">Nationality</div><div className="font-medium">{student.nationality || "—"}</div></div>
+                            <div><div className="text-xs text-muted-foreground mb-0.5">Parent / Guardian</div><div className="font-medium">{student.parentName || "—"}</div></div>
+                            <div><div className="text-xs text-muted-foreground mb-0.5">Parent Phone</div><div className="font-medium">{student.parentPhone || "—"}</div></div>
+                            <div><div className="text-xs text-muted-foreground mb-0.5">Parent Email</div><div className="font-medium">{student.parentEmail || "—"}</div></div>
+                            {student.notes && <div className="col-span-2 md:col-span-3"><div className="text-xs text-muted-foreground mb-0.5">Notes</div><div className="font-medium">{student.notes}</div></div>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (

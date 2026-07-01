@@ -15,6 +15,7 @@ export const studentsTable = pgTable("students", {
   parentEmail: text("parent_email"),
   nationality: text("nationality"),
   notes: text("notes"),
+  photoUrl: text("photo_url"),
 });
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true });

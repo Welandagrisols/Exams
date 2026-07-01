@@ -11,11 +11,6 @@ interface PrecomputedRank {
   classSize: number;
 }
 
-/**
- * Build a single student's report.
- * When `precomputedRank` is provided (e.g. from the /all endpoint that already
- * fetched all scores in one query) the rank DB query is skipped entirely.
- */
 async function buildReport(
   examId: number,
   studentId: number,
@@ -30,6 +25,7 @@ async function buildReport(
       className: classesTable.name,
       gender: studentsTable.gender,
       dateOfBirth: studentsTable.dateOfBirth,
+      photoUrl: studentsTable.photoUrl,
     })
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
@@ -106,10 +102,8 @@ async function buildReport(
   let classSize: number;
 
   if (precomputedRank) {
-    // Reuse the pre-computed values — no extra DB query needed
     ({ rank, classSize } = precomputedRank);
   } else {
-    // Single-report path: compute rank with one query
     const allScoreRows = await db
       .select({ studentId: scoresTable.studentId, marks: scoresTable.marks })
       .from(scoresTable)
@@ -152,13 +146,11 @@ router.get("/reports/:examId/all", async (req, res): Promise<void> => {
   const examId = parseInt(req.params.examId);
   if (isNaN(examId)) { res.status(400).json({ error: "Invalid examId" }); return; }
 
-  // Fetch ALL scores for this exam once — used for rank computation
   const allScoreRows = await db
     .select({ studentId: scoresTable.studentId, marks: scoresTable.marks })
     .from(scoresTable)
     .where(eq(scoresTable.examId, examId));
 
-  // Compute per-student totals and derive ranks in memory (O(N) — no per-student DB query)
   const studentTotals = new Map<number, number>();
   for (const row of allScoreRows) {
     const m = parseFloat(row.marks as unknown as string);

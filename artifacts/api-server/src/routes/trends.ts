@@ -36,7 +36,6 @@ router.get("/trends/class/:classId", async (req, res): Promise<void> => {
 
     if (scores.length === 0) continue;
 
-    // Group marks by learning area
     const areaMarks = new Map<number, number[]>();
     for (const s of scores) {
       if (!s.learningAreaId) continue;
@@ -45,7 +44,6 @@ router.get("/trends/class/:classId", async (req, res): Promise<void> => {
       areaMarks.get(s.learningAreaId)!.push(m);
     }
 
-    // Build per-subject averages
     const areaAverages = [];
     const allPcts: number[] = [];
     for (const la of learningAreas) {
@@ -85,6 +83,7 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
       className: classesTable.name,
       gender: studentsTable.gender,
       dateOfBirth: studentsTable.dateOfBirth,
+      photoUrl: studentsTable.photoUrl,
     })
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
@@ -100,9 +99,9 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
     className: studentRow.className ?? null,
     gender: studentRow.gender ?? null,
     dateOfBirth: studentRow.dateOfBirth ?? null,
+    photoUrl: studentRow.photoUrl ?? null,
   };
 
-  // Get all exams this student has scores in
   const examIds = await db
     .selectDistinct({ examId: scoresTable.examId })
     .from(scoresTable)
@@ -116,7 +115,7 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
   const trendExams = [];
   for (const { examId } of examIds) {
     const [exam] = await db
-      .select({ id: examsTable.id, name: examsTable.name, term: examsTable.term, year: examsTable.year })
+      .select({ id: examsTable.id, name: examsTable.name, term: examsTable.term, year: examsTable.year, classId: examsTable.classId })
       .from(examsTable)
       .where(eq(examsTable.id, examId));
     if (!exam) continue;
@@ -152,6 +151,28 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
     const avgPoints = subjectPoints.length > 0 ? subjectPoints.reduce((s, p) => s + p, 0) / subjectPoints.length : 0;
     const overallGrade = getOverallGrade(avgPoints);
 
+    // Compute class average for this exam (all students in same class)
+    let classAverage: number | null = null;
+    if (exam.classId) {
+      const allScores = await db
+        .select({ studentId: scoresTable.studentId, learningAreaId: scoresTable.learningAreaId, marks: scoresTable.marks })
+        .from(scoresTable)
+        .where(eq(scoresTable.examId, examId));
+
+      if (allScores.length > 0) {
+        const studentTotals = new Map<number, { total: number; maxTotal: number }>();
+        for (const s of allScores) {
+          const la = learningAreas.find(l => l.id === s.learningAreaId);
+          if (!la) continue;
+          const m = parseFloat(s.marks as unknown as string);
+          const existing = studentTotals.get(s.studentId) ?? { total: 0, maxTotal: 0 };
+          studentTotals.set(s.studentId, { total: existing.total + m, maxTotal: existing.maxTotal + la.maxMarks });
+        }
+        const pcts = [...studentTotals.values()].map(v => v.maxTotal > 0 ? (v.total / v.maxTotal) * 100 : 0);
+        classAverage = pcts.length > 0 ? Math.round((pcts.reduce((s, p) => s + p, 0) / pcts.length) * 10) / 10 : null;
+      }
+    }
+
     trendExams.push({
       examId: exam.id,
       examName: exam.name,
@@ -161,11 +182,11 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
       totalMaxMarks,
       averagePercentage: Math.round(averagePercentage * 10) / 10,
       overallGrade,
+      classAverage,
       subjects,
     });
   }
 
-  // Sort by year, then term, then id
   trendExams.sort((a, b) => a.year !== b.year ? a.year - b.year : a.term !== b.term ? a.term - b.term : a.examId - b.examId);
 
   res.json({ student, exams: trendExams });

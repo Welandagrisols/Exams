@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { fetchCurrentUser, type AuthUser } from "@/lib/auth";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 interface AuthContextValue {
-  user: AuthUser | null;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -10,22 +12,32 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCurrentUser().then((u) => {
-      setUser(u);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
-    window.location.href = "/api/logout";
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

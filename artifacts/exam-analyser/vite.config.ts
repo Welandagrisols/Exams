@@ -29,6 +29,10 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
+  define: {
+    __SUPABASE_URL__: JSON.stringify(process.env.SUPABASE_URL ?? ""),
+    __SUPABASE_ANON_KEY__: JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ""),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -48,22 +52,9 @@ export default defineConfig({
         start_url: "/",
         categories: ["education", "productivity"],
         icons: [
-          {
-            src: "pwa-icon.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "pwa-icon.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "pwa-icon.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
+          { src: "pwa-icon.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-icon.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-icon.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
@@ -89,17 +80,13 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: {
-        enabled: false,
-      },
+      devOptions: { enabled: false },
     }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
+            m.cartographer({ root: path.resolve(import.meta.dirname, "..") }),
           ),
           await import("@replit/vite-plugin-dev-banner").then((m) =>
             m.devBanner(),
@@ -124,9 +111,7 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
-    fs: {
-      strict: true,
-    },
+    fs: { strict: true },
     proxy: {
       "/api": {
         target: "http://localhost:8000",

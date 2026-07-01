@@ -9,8 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell,
+  LineChart, Line, Legend, Tooltip, ComposedChart, Area,
+} from 'recharts';
+import { authFetch } from "@/lib/supabase";
 
 export default function StudentReport() {
   const [, params] = useRoute("/reports/:examId/:studentId");
@@ -22,6 +26,17 @@ export default function StudentReport() {
   });
 
   const { data: school } = useGetSchool();
+
+  // Fetch full historical trends to power the performance trajectory graph
+  const { data: trends } = useQuery({
+    queryKey: ["trends", "student", studentId],
+    queryFn: async () => {
+      const res = await authFetch(`/api/trends/student/${studentId}`);
+      if (!res.ok) throw new Error("Failed to fetch trends");
+      return res.json();
+    },
+    enabled: !!studentId,
+  });
   
   const [teacherComment, setTeacherComment] = useState("");
   const [principalComment, setPrincipalComment] = useState("");
@@ -55,6 +70,13 @@ export default function StudentReport() {
     }
   };
 
+  // Build trend chart data from historical exams
+  const trendData = (trends?.exams ?? []).map((e: any) => ({
+    label: `T${e.term} ${e.year}`,
+    student: Math.round(e.averagePercentage * 10) / 10,
+    class: e.classAverage != null ? Math.round(e.classAverage * 10) / 10 : null,
+  }));
+
   if (isLoading) {
     return (
       <Layout>
@@ -76,6 +98,8 @@ export default function StudentReport() {
       </Layout>
     );
   }
+
+  const photoUrl = (report.student as any).photoUrl as string | null | undefined;
 
   return (
     <Layout>
@@ -134,24 +158,45 @@ export default function StudentReport() {
             </div>
           </div>
 
-          {/* Student Info */}
-          <div className="p-6 md:px-10 py-6 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 border-b bg-white">
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Student Name</div>
-              <div className="font-bold text-lg text-slate-900">{report.student.name}</div>
+          {/* Student Info — with passport photo slot */}
+          <div className="p-6 md:px-10 py-6 border-b bg-white flex gap-6">
+            {/* Photo slot */}
+            <div className="flex-shrink-0">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={report.student.name}
+                  className="w-24 h-28 object-cover rounded border-2 border-slate-200 bg-slate-50"
+                />
+              ) : (
+                <div className="w-24 h-28 border-2 border-dashed border-slate-300 rounded bg-slate-50 flex flex-col items-center justify-center text-slate-400 text-center">
+                  <svg className="w-8 h-8 mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-xs font-medium">Photo</span>
+                </div>
+              )}
             </div>
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Admission No</div>
-              <div className="font-bold text-lg text-slate-900">{report.student.admissionNo}</div>
-            </div>
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Class</div>
-              <div className="font-bold text-lg text-slate-900">{report.student.className}</div>
-            </div>
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Class Rank</div>
-              <div className="font-bold text-lg text-slate-900">
-                {report.rank} <span className="text-slate-500 text-sm font-medium">out of {report.classSize}</span>
+
+            {/* Student fields */}
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4">
+              <div>
+                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Student Name</div>
+                <div className="font-bold text-lg text-slate-900">{report.student.name}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Admission No</div>
+                <div className="font-bold text-lg text-slate-900">{report.student.admissionNo}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Class</div>
+                <div className="font-bold text-lg text-slate-900">{report.student.className}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-1">Class Rank</div>
+                <div className="font-bold text-lg text-slate-900">
+                  {report.rank} <span className="text-slate-500 text-sm font-medium">out of {report.classSize}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -203,23 +248,104 @@ export default function StudentReport() {
             </table>
           </div>
 
-          {/* Chart */}
-          <div className="px-6 md:px-10 pb-6 print:hidden">
-             <div className="h-48 w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={report.subjects} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                   <XAxis dataKey="abbreviation" tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} />
-                   <YAxis tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} domain={[0, 100]} />
-                   <Bar dataKey="percentage" radius={[2, 2, 0, 0]} maxBarSize={40}>
-                     {report.subjects.map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={getRubricHexColor(entry.rubricGrade)} />
-                     ))}
-                   </Bar>
-                 </BarChart>
-               </ResponsiveContainer>
-             </div>
+          {/* Subject bar chart — screen only */}
+          <div className="px-6 md:px-10 pb-4 print:hidden">
+            <div className="h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={report.subjects} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="abbreviation" tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} domain={[0, 100]} />
+                  <Bar dataKey="percentage" radius={[2, 2, 0, 0]} maxBarSize={40}>
+                    {report.subjects.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getRubricHexColor(entry.rubricGrade)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          {/* Performance Trajectory — student vs class average across all terms/grades */}
+          {trendData.length > 1 && (
+            <div className="px-6 md:px-10 pb-6 border-t pt-6">
+              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+                Performance Trajectory — Grade 7 to 9
+              </h3>
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} />
+                    <YAxis tickLine={false} axisLine={false} fontSize={10} tick={{fill: '#64748b'}} domain={[0, 100]} />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [`${value}%`, name === "student" ? report.student.name : "Class Average"]}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    />
+                    <Legend
+                      formatter={(value) => value === "student" ? report.student.name : "Class Average"}
+                      wrapperStyle={{ fontSize: 11 }}
+                    />
+                    {/* Class average — shaded area */}
+                    {trendData.some((d: any) => d.class != null) && (
+                      <Area
+                        type="monotone"
+                        dataKey="class"
+                        fill="#e2e8f0"
+                        stroke="#94a3b8"
+                        strokeWidth={2}
+                        strokeDasharray="5 3"
+                        dot={false}
+                        name="class"
+                        connectNulls
+                      />
+                    )}
+                    {/* Student line */}
+                    <Line
+                      type="monotone"
+                      dataKey="student"
+                      stroke="#1e3a5f"
+                      strokeWidth={2.5}
+                      dot={{ fill: "#1e3a5f", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="student"
+                      connectNulls
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 text-center">
+                Tracks average % across all terms — solid line is {report.student.name}, shaded area is class average
+              </p>
+            </div>
+          )}
+
+          {/* Printable performance trajectory */}
+          {trendData.length > 1 && (
+            <div className="hidden print:block px-10 pb-6 border-t pt-4">
+              <div className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Performance Trajectory</div>
+              <table className="w-full text-xs border-collapse border border-slate-200">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="border border-slate-200 px-3 py-1.5 text-left">Term</th>
+                    <th className="border border-slate-200 px-3 py-1.5 text-center">Student %</th>
+                    <th className="border border-slate-200 px-3 py-1.5 text-center">Class Avg %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trendData.map((row: any) => (
+                    <tr key={row.label} className="even:bg-slate-50">
+                      <td className="border border-slate-200 px-3 py-1.5 font-medium">{row.label}</td>
+                      <td className="border border-slate-200 px-3 py-1.5 text-center font-mono">{row.student}%</td>
+                      <td className="border border-slate-200 px-3 py-1.5 text-center font-mono text-slate-500">
+                        {row.class != null ? `${row.class}%` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Comments Section */}
           <div className="p-6 md:px-10 py-6 border-t bg-slate-50 space-y-6 print:bg-transparent">

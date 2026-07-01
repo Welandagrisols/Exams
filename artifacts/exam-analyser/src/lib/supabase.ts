@@ -1,7 +1,27 @@
+import { createClient } from "@supabase/supabase-js";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
-setAuthTokenGetter(null);
+declare const __SUPABASE_URL__: string;
+declare const __SUPABASE_ANON_KEY__: string;
+
+export const supabase = createClient(__SUPABASE_URL__, __SUPABASE_ANON_KEY__, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
+
+setAuthTokenGetter(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+});
 
 export async function authFetch(input: string | URL, init?: RequestInit): Promise<Response> {
-  return fetch(input, { ...init, credentials: "include" });
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers = new Headers(init?.headers);
+  if (session?.access_token) {
+    headers.set("authorization", `Bearer ${session.access_token}`);
+  }
+  return fetch(input, { ...init, headers });
 }

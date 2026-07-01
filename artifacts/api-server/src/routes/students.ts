@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
+import multer from "multer";
 import { db, studentsTable, classesTable } from "@workspace/db";
 import {
   ListStudentsQueryParams,
@@ -12,6 +13,8 @@ import {
   UpdateStudentResponse,
   DeleteStudentParams,
 } from "@workspace/api-zod";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const STUDENT_SELECT = {
   id: studentsTable.id,
@@ -26,6 +29,7 @@ const STUDENT_SELECT = {
   parentEmail: studentsTable.parentEmail,
   nationality: studentsTable.nationality,
   notes: studentsTable.notes,
+  photoUrl: studentsTable.photoUrl,
 } as const;
 
 const router: IRouter = Router();
@@ -42,7 +46,7 @@ router.get("/students", async (req, res): Promise<void> => {
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(query.data.classId != null ? eq(studentsTable.classId, query.data.classId) : undefined)
     .orderBy(studentsTable.name);
-  res.json(ListStudentsResponse.parse(rows));
+  res.json(rows);
 });
 
 router.post("/students", async (req, res): Promise<void> => {
@@ -57,7 +61,7 @@ router.post("/students", async (req, res): Promise<void> => {
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(eq(studentsTable.id, student.id));
-  res.status(201).json(GetStudentResponse.parse(row));
+  res.status(201).json(row);
 });
 
 router.get("/students/:id", async (req, res): Promise<void> => {
@@ -75,7 +79,7 @@ router.get("/students/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Student not found" });
     return;
   }
-  res.json(GetStudentResponse.parse(row));
+  res.json(row);
 });
 
 router.patch("/students/:id", async (req, res): Promise<void> => {
@@ -99,7 +103,7 @@ router.patch("/students/:id", async (req, res): Promise<void> => {
     .from(studentsTable)
     .leftJoin(classesTable, eq(classesTable.id, studentsTable.classId))
     .where(eq(studentsTable.id, params.data.id));
-  res.json(UpdateStudentResponse.parse(row));
+  res.json(row);
 });
 
 router.delete("/students/:id", async (req, res): Promise<void> => {
@@ -114,6 +118,32 @@ router.delete("/students/:id", async (req, res): Promise<void> => {
     return;
   }
   res.sendStatus(204);
+});
+
+router.post("/students/:id/photo", upload.single("photo"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid student id" }); return; }
+  if (!req.file) { res.status(400).json({ error: "Photo file is required" }); return; }
+
+  const base64 = req.file.buffer.toString("base64");
+  const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+
+  const [updated] = await db
+    .update(studentsTable)
+    .set({ photoUrl: dataUrl })
+    .where(eq(studentsTable.id, id))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Student not found" }); return; }
+  res.json({ photoUrl: dataUrl });
+});
+
+router.delete("/students/:id/photo", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid student id" }); return; }
+
+  await db.update(studentsTable).set({ photoUrl: null }).where(eq(studentsTable.id, id));
+  res.json({ photoUrl: null });
 });
 
 export default router;
