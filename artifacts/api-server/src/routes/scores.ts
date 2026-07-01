@@ -72,8 +72,6 @@ router.post("/scores", async (req, res): Promise<void> => {
     upserted.push(row);
   }
 
-  const ids = upserted.map((r) => r.learningAreaId);
-  const areas = await db.select().from(learningAreasTable).where(eq(learningAreasTable.id, ids[0]));
   const areaMap = new Map(
     (await db.select().from(learningAreasTable)).map((a) => [a.id, a])
   );

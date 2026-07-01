@@ -6,7 +6,21 @@ import { getRubricGrade, getRubricPoints, getOverallGrade, thresholdsFromSchool 
 
 const router: IRouter = Router();
 
-async function buildReport(examId: number, studentId: number) {
+interface PrecomputedRank {
+  rank: number;
+  classSize: number;
+}
+
+/**
+ * Build a single student's report.
+ * When `precomputedRank` is provided (e.g. from the /all endpoint that already
+ * fetched all scores in one query) the rank DB query is skipped entirely.
+ */
+async function buildReport(
+  examId: number,
+  studentId: number,
+  precomputedRank?: PrecomputedRank,
+) {
   const [student] = await db
     .select({
       id: studentsTable.id,
@@ -83,24 +97,35 @@ async function buildReport(examId: number, studentId: number) {
   const totalMarks = subjects.reduce((s, x) => s + x.marks, 0);
   const totalMaxMarks = subjects.reduce((s, x) => s + x.maxMarks, 0);
   const averagePercentage = totalMaxMarks > 0 ? (totalMarks / totalMaxMarks) * 100 : 0;
-  const averagePoints = subjects.length > 0 ? subjects.reduce((s, x) => s + x.rubricPoints, 0) / subjects.length : 0;
+  const averagePoints = subjects.length > 0
+    ? subjects.reduce((s, x) => s + x.rubricPoints, 0) / subjects.length
+    : 0;
   const overallGrade = getOverallGrade(averagePoints);
 
-  // Compute rank
-  const allStudents = await db
-    .select({ studentId: scoresTable.studentId })
-    .from(scoresTable)
-    .where(eq(scoresTable.examId, examId))
-    .groupBy(scoresTable.studentId);
+  let rank: number;
+  let classSize: number;
 
-  const classSize = allStudents.length;
-  let rank = 1;
-  for (const s of allStudents) {
-    if (s.studentId === studentId) continue;
-    const sRows = await db.select({ marks: scoresTable.marks }).from(scoresTable)
-      .where(and(eq(scoresTable.examId, examId), eq(scoresTable.studentId, s.studentId)));
-    const sTotal = sRows.reduce((acc, r) => acc + parseFloat(r.marks as unknown as string), 0);
-    if (sTotal > totalMarks) rank++;
+  if (precomputedRank) {
+    // Reuse the pre-computed values — no extra DB query needed
+    ({ rank, classSize } = precomputedRank);
+  } else {
+    // Single-report path: compute rank with one query
+    const allScoreRows = await db
+      .select({ studentId: scoresTable.studentId, marks: scoresTable.marks })
+      .from(scoresTable)
+      .where(eq(scoresTable.examId, examId));
+
+    const studentTotals = new Map<number, number>();
+    for (const row of allScoreRows) {
+      const m = parseFloat(row.marks as unknown as string);
+      studentTotals.set(row.studentId, (studentTotals.get(row.studentId) ?? 0) + m);
+    }
+
+    classSize = studentTotals.size;
+    rank = 1;
+    for (const [sid, total] of studentTotals) {
+      if (sid !== studentId && total > totalMarks) rank++;
+    }
   }
 
   const [comment] = await db.select().from(reportCommentsTable)
@@ -127,15 +152,36 @@ router.get("/reports/:examId/all", async (req, res): Promise<void> => {
   const examId = parseInt(req.params.examId);
   if (isNaN(examId)) { res.status(400).json({ error: "Invalid examId" }); return; }
 
-  const studentRows = await db
-    .select({ studentId: scoresTable.studentId })
+  // Fetch ALL scores for this exam once — used for rank computation
+  const allScoreRows = await db
+    .select({ studentId: scoresTable.studentId, marks: scoresTable.marks })
     .from(scoresTable)
-    .where(eq(scoresTable.examId, examId))
-    .groupBy(scoresTable.studentId);
+    .where(eq(scoresTable.examId, examId));
 
+  // Compute per-student totals and derive ranks in memory (O(N) — no per-student DB query)
+  const studentTotals = new Map<number, number>();
+  for (const row of allScoreRows) {
+    const m = parseFloat(row.marks as unknown as string);
+    studentTotals.set(row.studentId, (studentTotals.get(row.studentId) ?? 0) + m);
+  }
+
+  const classSize = studentTotals.size;
+  const rankMap = new Map<number, number>();
+  for (const [sid, total] of studentTotals) {
+    let rank = 1;
+    for (const [otherId, otherTotal] of studentTotals) {
+      if (otherId !== sid && otherTotal > total) rank++;
+    }
+    rankMap.set(sid, rank);
+  }
+
+  const studentIds = [...studentTotals.keys()];
   const reports = [];
-  for (const { studentId } of studentRows) {
-    const report = await buildReport(examId, studentId);
+  for (const studentId of studentIds) {
+    const report = await buildReport(examId, studentId, {
+      rank: rankMap.get(studentId) ?? 1,
+      classSize,
+    });
     if (report) reports.push(report);
   }
 

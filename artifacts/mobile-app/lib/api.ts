@@ -1,6 +1,12 @@
 import { supabase } from "./supabase";
+import Constants from "expo-constants";
 
-const DEV_DOMAIN = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+const extra = Constants.expoConfig?.extra ?? {};
+const DEV_DOMAIN = (
+  extra.apiUrl ||
+  process.env.EXPO_PUBLIC_API_URL ||
+  "http://localhost:8000"
+).replace(/\/$/, "");
 
 export function getApiUrl(path: string): string {
   return `${DEV_DOMAIN}/api${path}`;
@@ -17,18 +23,23 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = getApiUrl(path);
   const authHeaders = await getAuthHeaders();
+  const { headers: customHeaders, ...restOptions } = options ?? {};
   const res = await fetch(url, {
+    ...restOptions,
     headers: {
       "Content-Type": "application/json",
       ...authHeaders,
-      ...options?.headers,
+      ...(customHeaders instanceof Headers
+        ? Object.fromEntries(customHeaders.entries())
+        : (customHeaders as Record<string, string> | undefined)),
     },
-    ...options,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Request failed" }));
     throw new Error(err.error ?? `HTTP ${res.status}`);
   }
+  // 204 No Content — no body to parse
+  if (res.status === 204) return undefined as unknown as T;
   return res.json();
 }
 
