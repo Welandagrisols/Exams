@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, asc, sql } from "drizzle-orm";
+import { eq, desc, asc, sql, inArray } from "drizzle-orm";
 import { db, studentsTable, classesTable, examsTable, scoresTable, learningAreasTable } from "@workspace/db";
 import { getRubricGrade, getRubricPoints, getOverallGrade } from "../lib/rubric";
 
@@ -131,6 +131,16 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
         entry.totalMax += maxM;
       }
 
+      // Batch-fetch all student names for this exam in one query
+      const examStudentIds = [...studentMarks.keys()];
+      const examStudentRows = examStudentIds.length > 0
+        ? await db
+            .select({ id: studentsTable.id, name: studentsTable.name })
+            .from(studentsTable)
+            .where(inArray(studentsTable.id, examStudentIds))
+        : [];
+      const studentNameMap = new Map(examStudentRows.map(s => [s.id, s.name]));
+
       let topMarks = -1;
       for (const [studentId, data] of studentMarks.entries()) {
         const avgPts = data.count > 0 ? data.totalPts / data.count : 0;
@@ -142,15 +152,10 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
 
         if (data.totalMarks > topMarks) {
           topMarks = data.totalMarks;
-          // Fetch student name
-          const [st] = await db
-            .select({ name: studentsTable.name })
-            .from(studentsTable)
-            .where(eq(studentsTable.id, studentId));
-          if (st) {
-            topStudentName = st.name;
-            const avgPts2 = data.count > 0 ? data.totalPts / data.count : 0;
-            topStudentGrade = getOverallGrade(avgPts2);
+          const name = studentNameMap.get(studentId);
+          if (name) {
+            topStudentName = name;
+            topStudentGrade = getOverallGrade(avgPts);
           }
         }
       }

@@ -8,6 +8,13 @@ const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
+function extractJson(raw: string): string {
+  const stripped = raw.replace(/```json\n?|\n?```/g, "").trim();
+  const match = stripped.match(/\{[\s\S]*\}/);
+  if (match) return match[0];
+  return stripped;
+}
+
 router.post("/exams/:examId/ocr-upload", upload.single("image"), async (req, res): Promise<void> => {
   const examId = parseInt(req.params.examId);
   if (isNaN(examId) || !req.file) {
@@ -75,8 +82,7 @@ Rules:
       { inlineData: { data: base64Image, mimeType } },
     ]);
 
-    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(extractJson(result.response.text()));
 
     const enriched = (parsed.scores ?? []).map((row: any) => {
       const student = students.find(s => s.admissionNo === row.admissionNo || s.name === row.studentName);
@@ -137,8 +143,7 @@ Rules:
       { inlineData: { data: base64Image, mimeType } },
     ]);
 
-    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(extractJson(result.response.text()));
     res.json(parsed);
   } catch (err: any) {
     res.status(500).json({ error: err.message ?? "OCR processing failed" });
@@ -184,8 +189,7 @@ Rules:
       { inlineData: { data: base64Image, mimeType } },
     ]);
 
-    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(extractJson(result.response.text()));
 
     const entries = (parsed.entries ?? []).map((entry: any) => {
       let student = allStudents.find(s =>
@@ -261,8 +265,7 @@ Rules:
       { inlineData: { data: base64Image, mimeType } },
     ]);
 
-    const text = result.response.text().replace(/```json\n?|\n?```/g, "").trim();
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(extractJson(result.response.text()));
     const students = (parsed.students ?? []).map((s: any, i: number) => ({
       rowIndex: i,
       name: (s.name ?? "").trim(),
