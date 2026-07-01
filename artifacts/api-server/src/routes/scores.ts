@@ -54,23 +54,26 @@ router.post("/scores", async (req, res): Promise<void> => {
   }
   const { studentId, examId, scores } = parsed.data;
 
-  const upserted = [];
-  for (const entry of scores) {
-    const [row] = await db
-      .insert(scoresTable)
-      .values({
-        studentId,
-        examId,
-        learningAreaId: entry.learningAreaId,
-        marks: String(entry.marks),
-      })
-      .onConflictDoUpdate({
-        target: [scoresTable.studentId, scoresTable.examId, scoresTable.learningAreaId],
-        set: { marks: String(entry.marks) },
-      })
-      .returning();
-    upserted.push(row);
-  }
+  const upserted = await db.transaction(async (tx) => {
+    const rows = [];
+    for (const entry of scores) {
+      const [row] = await tx
+        .insert(scoresTable)
+        .values({
+          studentId,
+          examId,
+          learningAreaId: entry.learningAreaId,
+          marks: String(entry.marks),
+        })
+        .onConflictDoUpdate({
+          target: [scoresTable.studentId, scoresTable.examId, scoresTable.learningAreaId],
+          set: { marks: String(entry.marks) },
+        })
+        .returning();
+      rows.push(row);
+    }
+    return rows;
+  });
 
   const areaMap = new Map(
     (await db.select().from(learningAreasTable)).map((a) => [a.id, a])

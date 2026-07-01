@@ -170,13 +170,11 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const { data: dashboard, isLoading } = useGetDashboard();
 
-  const activeExams = dashboard?.recentExams?.filter(e => e.status === "ACTIVE").length ?? 0;
-
   const statValues: Record<string, number> = {
     totalStudents: dashboard?.totalStudents ?? 0,
     totalClasses: dashboard?.totalClasses ?? 0,
     totalExams: dashboard?.totalExams ?? 0,
-    totalActive: activeExams,
+    totalActive: (dashboard as any)?.totalActive ?? 0,
   };
 
   return (

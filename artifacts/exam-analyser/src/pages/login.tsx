@@ -18,7 +18,17 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) { setError(error.message); setLoading(false); }
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) {
+        setError("Your email hasn't been confirmed yet. Click 'Email magic link' to sign in without confirming, or check your inbox for the confirmation link.");
+      } else if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
+        setError("Incorrect email or password. Check your details or create a new account.");
+      } else {
+        setError(error.message);
+      }
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -33,7 +43,7 @@ export default function LoginPage() {
     });
     if (error) { setError(error.message); setLoading(false); }
     else if (data.session) {
-      // Email confirmation disabled — user is already signed in
+      setLoading(false);
     } else {
       setMode("signup_sent"); setLoading(false);
     }

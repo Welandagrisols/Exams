@@ -15,6 +15,10 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   const [{ count: totalExams }] = await db
     .select({ count: sql<number>`cast(count(*) as int)` })
     .from(examsTable);
+  const [{ count: totalActive }] = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
+    .from(examsTable)
+    .where(eq(examsTable.status, "active"));
 
   const recentExamRows = await db
     .select({
@@ -179,6 +183,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     totalStudents: totalStudents ?? 0,
     totalClasses: totalClasses ?? 0,
     totalExams: totalExams ?? 0,
+    totalActive: totalActive ?? 0,
     recentExams: recentExamRows,
     classSnapshots,
   });

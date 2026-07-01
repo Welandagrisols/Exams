@@ -32,7 +32,7 @@ export default function BulkCreateExam() {
   const { data: classes, isLoading } = useListClasses();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState<{ className: string; id: number }[] | null>(null);
+  const [created, setCreated] = useState<{ className: string; id: number; classId: number }[] | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,7 +86,7 @@ export default function BulkCreateExam() {
         throw new Error(err.error || "Failed to create exams");
       }
       const data = await res.json();
-      setCreated(data.exams.map((e: any) => ({ className: e.className, id: e.id })));
+      setCreated(data.exams.map((e: any) => ({ className: e.className, id: e.id, classId: e.classId })));
       toast({ title: `${data.count} exam${data.count !== 1 ? "s" : ""} created successfully` });
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
@@ -119,7 +119,7 @@ export default function BulkCreateExam() {
                     </div>
                     <span className="font-medium">{e.className}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/classes/${created.find(c => c.id === e.id)?.id}/exams`)}>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/classes/${e.classId}/exams`)}>
                     View Exams
                   </Button>
                 </div>
