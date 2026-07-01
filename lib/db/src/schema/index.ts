@@ -6,3 +6,4 @@ export * from "./exams";
 export * from "./scores";
 export * from "./reportComments";
 export * from "./messages";
+export * from "./users";

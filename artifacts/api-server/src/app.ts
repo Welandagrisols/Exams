@@ -3,7 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { requireAuth } from "./middlewares/auth";
+import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 
 const app: Express = express();
 
@@ -26,13 +26,17 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+await setupAuth(app);
+
+registerAuthRoutes(app);
+
 app.use("/api", (req, res, next) => {
   if (req.path === "/health") return next();
-  return requireAuth(req, res, next);
+  return isAuthenticated()(req, res, next);
 });
 app.use("/api", router);
 
