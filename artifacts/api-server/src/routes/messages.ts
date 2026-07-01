@@ -201,7 +201,7 @@ router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
       for (const score of scores) {
         if (!scoresByStudent.has(score.studentId)) scoresByStudent.set(score.studentId, []);
         const abbr = subjectMap.get(score.learningAreaId) ?? "?";
-        scoresByStudent.get(score.studentId)!.push({ abbr, marks: score.marks, maxMarks: subjects.find(s => s.id === score.learningAreaId)?.maxMarks ?? 100 });
+        scoresByStudent.get(score.studentId)!.push({ abbr, marks: parseFloat(score.marks as unknown as string), maxMarks: subjects.find(s => s.id === score.learningAreaId)?.maxMarks ?? 100 });
       }
     }
   }

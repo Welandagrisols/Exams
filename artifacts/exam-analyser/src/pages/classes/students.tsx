@@ -276,7 +276,7 @@ export default function Students() {
           <div className="bg-card rounded-lg border overflow-hidden">
             <div className="divide-y">
               {students.map(student => {
-                const currentPhoto = localPhotos[student.id] ?? (student as any).photoUrl as string | null;
+                const currentPhoto = localPhotos[student.id] ?? student.photoUrl;
                 return (
                   <div key={student.id}>
                     <div

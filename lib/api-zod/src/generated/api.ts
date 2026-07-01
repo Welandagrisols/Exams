@@ -181,7 +181,8 @@ export const ListStudentsResponseItem = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -222,7 +223,8 @@ export const GetStudentResponse = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish()
 })
 
 
@@ -258,7 +260,8 @@ export const UpdateStudentResponse = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "photoUrl": zod.string().nullish()
 })
 
 

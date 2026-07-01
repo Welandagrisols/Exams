@@ -4,13 +4,10 @@ import multer from "multer";
 import { db, studentsTable, classesTable } from "@workspace/db";
 import {
   ListStudentsQueryParams,
-  ListStudentsResponse,
   CreateStudentBody,
   GetStudentParams,
-  GetStudentResponse,
   UpdateStudentParams,
   UpdateStudentBody,
-  UpdateStudentResponse,
   DeleteStudentParams,
 } from "@workspace/api-zod";
 

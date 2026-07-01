@@ -113,6 +113,8 @@ export interface Student {
   nationality?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
 }
 
 export interface StudentInput {
@@ -126,6 +128,7 @@ export interface StudentInput {
   parentEmail?: string;
   nationality?: string;
   notes?: string;
+  photoUrl?: string;
 }
 
 export interface StudentUpdate {
@@ -139,6 +142,7 @@ export interface StudentUpdate {
   parentEmail?: string;
   nationality?: string;
   notes?: string;
+  photoUrl?: string;
 }
 
 export interface LearningArea {
@@ -341,6 +345,8 @@ export interface StudentExamTrendPoint {
   totalMaxMarks: number;
   averagePercentage: number;
   overallGrade: string;
+  /** @nullable */
+  classAverage?: number | null;
   subjects: StudentExamSubject[];
 }
 

@@ -1,6 +1,5 @@
 import { useGetReport, useUpdateReport, getGetReportQueryKey, useGetSchool } from "@workspace/api-client-react";
 import { Layout, Header } from "@/components/layout";
-import { Card, CardContent } from "@/components/ui/card";
 import { useRoute } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor, formatDate, getRubricHexColor } from "@/lib/utils";
@@ -99,7 +98,7 @@ export default function StudentReport() {
     );
   }
 
-  const photoUrl = (report.student as any).photoUrl as string | null | undefined;
+  const photoUrl = report.student.photoUrl;
 
   return (
     <Layout>
