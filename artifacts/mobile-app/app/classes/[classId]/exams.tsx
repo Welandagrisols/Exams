@@ -145,6 +145,10 @@ export default function ClassExamsScreen() {
               <Ionicons name="create-outline" size={15} color={colors.foreground} />
               <Text style={styles.actionText}>Scores</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/ocr-upload`)}>
+              <Ionicons name="camera-outline" size={15} color={colors.foreground} />
+              <Text style={styles.actionText}>Scan</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/rankings`)}>
               <Ionicons name="trophy-outline" size={15} color={colors.foreground} />
               <Text style={styles.actionText}>Rankings</Text>

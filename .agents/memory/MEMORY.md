@@ -4,3 +4,5 @@
 - [Legacy duplicate workflows conflict](legacy-duplicate-workflows.md) — stray `artifacts/*` workflows (API Server, web, mockup-sandbox) restart on same ports as main ones, causing EADDRINUSE; kill stray procs, leave duplicates stopped.
 - [EAS Build from Replit](eas-build-replit.md) — git writes blocked in main agent; use fake git via Python + /tmp copy; strip --no-pager prefix in fake git log handler.
 - [Exam Analyser monorepo setup](exam-analyser-setup.md) — vite must be in root devDeps for @tailwindcss/node; mobile app uses local expo bin; API server needs zod declared explicitly.
+- [Mobile multipart uploads](mobile-multipart-uploads.md) — shared apiFetch forces JSON content-type; use a separate apiUpload helper (no Content-Type header) for FormData/image uploads from Expo.
+- [pnpm store mismatch](pnpm-store-mismatch.md) — avoid `pnpm add`/scoped installs mid-workspace; edit package.json + run `CI=true pnpm install --no-frozen-lockfile` from root, synchronously.

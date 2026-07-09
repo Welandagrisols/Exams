@@ -35,6 +35,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow EduMetrics to access your photos to scan score sheets.",
+          "cameraPermission": "Allow EduMetrics to use your camera to scan score sheets."
+        }
       ]
     ],
     "experiments": {

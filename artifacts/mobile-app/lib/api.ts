@@ -43,6 +43,23 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   return res.json();
 }
 
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const url = getApiUrl(path);
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...authHeaders,
+    },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(err.error ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export function getRubricColor(grade: string): string {
   if (grade?.startsWith("EE")) return "#10b981";
   if (grade?.startsWith("ME")) return "#3b82f6";

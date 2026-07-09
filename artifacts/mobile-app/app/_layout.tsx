@@ -96,6 +96,10 @@ export default function RootLayout() {
                   options={{ title: "Scores", headerBackTitle: "Back" }}
                 />
                 <Stack.Screen
+                  name="exams/[examId]/ocr-upload"
+                  options={{ title: "Scan Score Sheet", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
                   name="reports/[examId]/[studentId]"
                   options={{ title: "Report Card", headerBackTitle: "Back" }}
                 />
