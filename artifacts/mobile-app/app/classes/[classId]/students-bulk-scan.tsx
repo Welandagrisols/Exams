@@ -24,7 +24,12 @@ type OcrStudentRow = {
   valid: boolean;
 };
 
-type OcrStudentListResult = { students: OcrStudentRow[]; total: number; valid: number };
+type RawOcrStudentRow = Omit<OcrStudentRow, "name" | "admissionNo"> & {
+  name: string | null;
+  admissionNo: string | null;
+};
+
+type OcrStudentListResult = { students: RawOcrStudentRow[]; total: number; valid: number };
 
 export default function BulkScanStudentsScreen() {
   const scheme = useColorScheme();
@@ -118,7 +123,13 @@ export default function BulkScanStudentsScreen() {
       fd.append("image", { uri: imageUri, name: filename, type: mimeType } as any);
 
       const data = await apiUpload<OcrStudentListResult>(`/ocr/student-list`, fd);
-      setRows(data.students);
+      setRows(
+        data.students.map((r) => ({
+          ...r,
+          name: r.name ?? "",
+          admissionNo: r.admissionNo ?? "",
+        }))
+      );
     } catch (err: any) {
       Alert.alert("OCR failed", err.message ?? "Could not read the student list.");
     } finally {

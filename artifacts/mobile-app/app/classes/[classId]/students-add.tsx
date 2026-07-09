@@ -126,8 +126,13 @@ export default function AddStudentScreen() {
       const fd = new FormData();
       fd.append("image", { uri: imageUri, name: filename, type: mimeType } as any);
 
-      const data = await apiUpload<StudentForm>(`/ocr/student`, fd);
-      setForm({ ...EMPTY_FORM, ...data });
+      const data = await apiUpload<Partial<StudentForm>>(`/ocr/student`, fd);
+      setForm({
+        ...EMPTY_FORM,
+        ...data,
+        name: data.name ?? "",
+        admissionNo: data.admissionNo ?? "",
+      });
     } catch (err: any) {
       Alert.alert("OCR failed", err.message ?? "Could not read the registration form.");
     } finally {
