@@ -1,9 +1,9 @@
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator,
-  RefreshControl, useColorScheme,
+  RefreshControl, useColorScheme, TouchableOpacity,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import palette from "@/constants/colors";
@@ -20,6 +20,7 @@ type Student = {
 export default function StudentsScreen() {
   const scheme = useColorScheme();
   const colors = scheme === "dark" ? palette.dark : palette.light;
+  const router = useRouter();
   const { classId } = useLocalSearchParams<{ classId: string }>();
 
   const { data, isLoading, refetch, isRefetching } = useQuery<Student[]>({
@@ -30,6 +31,29 @@ export default function StudentsScreen() {
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    addBar: {
+      flexDirection: "row",
+      gap: 8,
+      padding: 12,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    addBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: colors.radius,
+      backgroundColor: colors.primary,
+    },
+    addBtnText: {
+      fontFamily: "Poppins_600SemiBold",
+      fontSize: 12,
+      color: "#fff",
+    },
     item: {
       flexDirection: "row",
       alignItems: "center",
@@ -126,11 +150,23 @@ export default function StudentsScreen() {
       keyExtractor={(item) => String(item.id)}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       ListHeaderComponent={
-        data?.length ? (
-          <View style={styles.countBar}>
-            <Text style={styles.countText}>{data.length} student{data.length !== 1 ? "s" : ""}</Text>
+        <View>
+          <View style={styles.addBar}>
+            <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-add`)}>
+              <Ionicons name="camera" size={15} color="#fff" />
+              <Text style={styles.addBtnText}>Scan Registration Form</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-bulk-scan`)}>
+              <Ionicons name="list" size={15} color="#fff" />
+              <Text style={styles.addBtnText}>Scan Class List</Text>
+            </TouchableOpacity>
           </View>
-        ) : null
+          {data?.length ? (
+            <View style={styles.countBar}>
+              <Text style={styles.countText}>{data.length} student{data.length !== 1 ? "s" : ""}</Text>
+            </View>
+          ) : null}
+        </View>
       }
       ListEmptyComponent={
         <View style={styles.empty}>
