@@ -1,5 +1,6 @@
 - [Expo keep-awake stale watcher](expo-keepawake-watcher.md) — after package upgrades, _tmp_N/build path goes missing; mkdir the stub to fix.
 - [Expo port constraints](expo-port.md) — Replit proxy only supports specific ports; 8081 is unavailable; use 8082 for Expo Metro.
 - [API server port split](api-server-ports.md) — main API Server workflow uses port 8000; duplicate artifact workflow uses 8080; never let them swap.
+- [Legacy duplicate workflows conflict](legacy-duplicate-workflows.md) — stray `artifacts/*` workflows (API Server, web, mockup-sandbox) restart on same ports as main ones, causing EADDRINUSE; kill stray procs, leave duplicates stopped.
 - [EAS Build from Replit](eas-build-replit.md) — git writes blocked in main agent; use fake git via Python + /tmp copy; strip --no-pager prefix in fake git log handler.
 - [Exam Analyser monorepo setup](exam-analyser-setup.md) — vite must be in root devDeps for @tailwindcss/node; mobile app uses local expo bin; API server needs zod declared explicitly.
