@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, date, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { classesTable } from "./classes";
@@ -16,6 +16,7 @@ export const studentsTable = pgTable("students", {
   nationality: text("nationality"),
   notes: text("notes"),
   photoUrl: text("photo_url"),
+  feeBalance: numeric("fee_balance", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
 export const insertStudentSchema = createInsertSchema(studentsTable).omit({ id: true });

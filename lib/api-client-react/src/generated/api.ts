@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BulkUpdateFeeBalances200,
   Class,
   ClassInput,
   ClassTrends,
@@ -29,11 +30,14 @@ import type {
   ExamAnalytics,
   ExamInput,
   ExamUpdate,
+  FeeBalanceBulkUpdateInput,
+  FeeReminderCandidate,
   HealthStatus,
   LearningArea,
   LearningAreaInput,
   LearningAreaUpdate,
   ListExamsParams,
+  ListFeeReminderCandidatesParams,
   ListScoresParams,
   ListStudentsParams,
   RankedStudent,
@@ -1026,6 +1030,161 @@ export const useDeleteStudent = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteStudentMutationOptions(options));
     }
+
+export const getBulkUpdateFeeBalancesUrl = () => {
+
+
+
+
+  return `/api/students/fee-balances/bulk`
+}
+
+/**
+ * @summary Bulk update student fee balances (e.g. from an OCR-scanned fee sheet)
+ */
+export const bulkUpdateFeeBalances = async (feeBalanceBulkUpdateInput: FeeBalanceBulkUpdateInput, options?: RequestInit): Promise<BulkUpdateFeeBalances200> => {
+
+  return customFetch<BulkUpdateFeeBalances200>(getBulkUpdateFeeBalancesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      feeBalanceBulkUpdateInput,)
+  }
+);}
+
+
+
+
+export const getBulkUpdateFeeBalancesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateFeeBalances>>, TError,{data: BodyType<FeeBalanceBulkUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateFeeBalances>>, TError,{data: BodyType<FeeBalanceBulkUpdateInput>}, TContext> => {
+
+const mutationKey = ['bulkUpdateFeeBalances'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkUpdateFeeBalances>>, {data: BodyType<FeeBalanceBulkUpdateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkUpdateFeeBalances(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkUpdateFeeBalancesMutationResult = NonNullable<Awaited<ReturnType<typeof bulkUpdateFeeBalances>>>
+    export type BulkUpdateFeeBalancesMutationBody = BodyType<FeeBalanceBulkUpdateInput>
+    export type BulkUpdateFeeBalancesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk update student fee balances (e.g. from an OCR-scanned fee sheet)
+ */
+export const useBulkUpdateFeeBalances = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkUpdateFeeBalances>>, TError,{data: BodyType<FeeBalanceBulkUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkUpdateFeeBalances>>,
+        TError,
+        {data: BodyType<FeeBalanceBulkUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getBulkUpdateFeeBalancesMutationOptions(options));
+    }
+
+export const getListFeeReminderCandidatesUrl = (params: ListFeeReminderCandidatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/students/fee-reminders?${stringifiedParams}` : `/api/students/fee-reminders`
+}
+
+/**
+ * @summary List students whose fee balance is at or above a threshold
+ */
+export const listFeeReminderCandidates = async (params: ListFeeReminderCandidatesParams, options?: RequestInit): Promise<FeeReminderCandidate[]> => {
+
+  return customFetch<FeeReminderCandidate[]>(getListFeeReminderCandidatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFeeReminderCandidatesQueryKey = (params?: ListFeeReminderCandidatesParams,) => {
+    return [
+    `/api/students/fee-reminders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFeeReminderCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof listFeeReminderCandidates>>, TError = ErrorType<unknown>>(params: ListFeeReminderCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFeeReminderCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFeeReminderCandidatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFeeReminderCandidates>>> = ({ signal }) => listFeeReminderCandidates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFeeReminderCandidates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFeeReminderCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof listFeeReminderCandidates>>>
+export type ListFeeReminderCandidatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List students whose fee balance is at or above a threshold
+ */
+
+export function useListFeeReminderCandidates<TData = Awaited<ReturnType<typeof listFeeReminderCandidates>>, TError = ErrorType<unknown>>(
+ params: ListFeeReminderCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFeeReminderCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFeeReminderCandidatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListLearningAreasUrl = () => {
 

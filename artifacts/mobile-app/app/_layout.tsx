@@ -119,6 +119,14 @@ export default function RootLayout() {
                   name="messages/[id]"
                   options={{ title: "Message", headerBackTitle: "Back" }}
                 />
+                <Stack.Screen
+                  name="fees/scan"
+                  options={{ title: "Scan Fee Sheet", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="fees/reminders"
+                  options={{ title: "Fee Reminders", headerBackTitle: "Back" }}
+                />
               </Stack>
               <StatusBar style={scheme === "dark" ? "light" : "light"} />
             </KeyboardProvider>

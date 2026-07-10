@@ -6,27 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Student {
+export interface FeeReminderCandidate {
   id: number;
   name: string;
   admissionNo: string;
   classId: number;
   /** @nullable */
   className?: string | null;
-  /** @nullable */
-  gender?: string | null;
-  /** @nullable */
-  dateOfBirth?: string | null;
+  feeBalance: string;
   /** @nullable */
   parentName?: string | null;
   /** @nullable */
   parentPhone?: string | null;
   /** @nullable */
   parentEmail?: string | null;
-  /** @nullable */
-  nationality?: string | null;
-  /** @nullable */
-  notes?: string | null;
-  /** @nullable */
-  feeBalance?: string | null;
 }

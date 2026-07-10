@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './bulkUpdateFeeBalances200';
 export * from './class';
 export * from './classGradeSummary';
 export * from './classInput';
@@ -20,12 +21,16 @@ export * from './examInput';
 export * from './examTrendPoint';
 export * from './examTrendSubject';
 export * from './examUpdate';
+export * from './feeBalanceBulkUpdateInput';
+export * from './feeBalanceBulkUpdateInputUpdatesItem';
+export * from './feeReminderCandidate';
 export * from './healthStatus';
 export * from './learningArea';
 export * from './learningAreaAnalytics';
 export * from './learningAreaInput';
 export * from './learningAreaUpdate';
 export * from './listExamsParams';
+export * from './listFeeReminderCandidatesParams';
 export * from './listScoresParams';
 export * from './listStudentsParams';
 export * from './rankedStudent';

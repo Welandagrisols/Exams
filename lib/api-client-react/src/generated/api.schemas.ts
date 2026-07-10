@@ -114,7 +114,7 @@ export interface Student {
   /** @nullable */
   notes?: string | null;
   /** @nullable */
-  photoUrl?: string | null;
+  feeBalance?: string | null;
 }
 
 export interface StudentInput {
@@ -128,7 +128,6 @@ export interface StudentInput {
   parentEmail?: string;
   nationality?: string;
   notes?: string;
-  photoUrl?: string;
 }
 
 export interface StudentUpdate {
@@ -142,7 +141,32 @@ export interface StudentUpdate {
   parentEmail?: string;
   nationality?: string;
   notes?: string;
-  photoUrl?: string;
+  feeBalance?: string;
+}
+
+export type FeeBalanceBulkUpdateInputUpdatesItem = {
+  studentId: number;
+  feeBalance: string;
+};
+
+export interface FeeBalanceBulkUpdateInput {
+  updates: FeeBalanceBulkUpdateInputUpdatesItem[];
+}
+
+export interface FeeReminderCandidate {
+  id: number;
+  name: string;
+  admissionNo: string;
+  classId: number;
+  /** @nullable */
+  className?: string | null;
+  feeBalance: string;
+  /** @nullable */
+  parentName?: string | null;
+  /** @nullable */
+  parentPhone?: string | null;
+  /** @nullable */
+  parentEmail?: string | null;
 }
 
 export interface LearningArea {
@@ -345,8 +369,6 @@ export interface StudentExamTrendPoint {
   totalMaxMarks: number;
   averagePercentage: number;
   overallGrade: string;
-  /** @nullable */
-  classAverage?: number | null;
   subjects: StudentExamSubject[];
 }
 
@@ -397,6 +419,15 @@ export interface DashboardSummary {
 }
 
 export type ListStudentsParams = {
+classId?: number;
+};
+
+export type BulkUpdateFeeBalances200 = {
+  updated: number;
+};
+
+export type ListFeeReminderCandidatesParams = {
+minBalance: number;
 classId?: number;
 };
 

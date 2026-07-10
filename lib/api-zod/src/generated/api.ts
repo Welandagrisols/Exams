@@ -182,7 +182,7 @@ export const ListStudentsResponseItem = zod.object({
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
   "notes": zod.string().nullish(),
-  "photoUrl": zod.string().nullish()
+  "feeBalance": zod.string().nullish()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -224,7 +224,7 @@ export const GetStudentResponse = zod.object({
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
   "notes": zod.string().nullish(),
-  "photoUrl": zod.string().nullish()
+  "feeBalance": zod.string().nullish()
 })
 
 
@@ -245,7 +245,8 @@ export const UpdateStudentBody = zod.object({
   "parentPhone": zod.string().optional(),
   "parentEmail": zod.string().optional(),
   "nationality": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "feeBalance": zod.string().optional()
 })
 
 export const UpdateStudentResponse = zod.object({
@@ -261,7 +262,7 @@ export const UpdateStudentResponse = zod.object({
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
   "notes": zod.string().nullish(),
-  "photoUrl": zod.string().nullish()
+  "feeBalance": zod.string().nullish()
 })
 
 
@@ -271,6 +272,43 @@ export const UpdateStudentResponse = zod.object({
 export const DeleteStudentParams = zod.object({
   "id": zod.coerce.number()
 })
+
+
+/**
+ * @summary Bulk update student fee balances (e.g. from an OCR-scanned fee sheet)
+ */
+export const BulkUpdateFeeBalancesBody = zod.object({
+  "updates": zod.array(zod.object({
+  "studentId": zod.number(),
+  "feeBalance": zod.string()
+}))
+})
+
+export const BulkUpdateFeeBalancesResponse = zod.object({
+  "updated": zod.number()
+})
+
+
+/**
+ * @summary List students whose fee balance is at or above a threshold
+ */
+export const ListFeeReminderCandidatesQueryParams = zod.object({
+  "minBalance": zod.coerce.number(),
+  "classId": zod.coerce.number().optional()
+})
+
+export const ListFeeReminderCandidatesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "admissionNo": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string().nullish(),
+  "feeBalance": zod.string(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "parentEmail": zod.string().nullish()
+})
+export const ListFeeReminderCandidatesResponse = zod.array(ListFeeReminderCandidatesResponseItem)
 
 
 /**
@@ -489,7 +527,8 @@ export const GetReportResponse = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "feeBalance": zod.string().nullish()
 }),
   "exam": zod.object({
   "id": zod.number(),
@@ -571,7 +610,8 @@ export const UpdateReportResponse = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "feeBalance": zod.string().nullish()
 }),
   "exam": zod.object({
   "id": zod.number(),
@@ -648,7 +688,8 @@ export const GetRankingsResponseItem = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "feeBalance": zod.string().nullish()
 }),
   "totalMarks": zod.number(),
   "totalMaxMarks": zod.number(),
@@ -764,7 +805,8 @@ export const GetStudentTrendsResponse = zod.object({
   "parentPhone": zod.string().nullish(),
   "parentEmail": zod.string().nullish(),
   "nationality": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "feeBalance": zod.string().nullish()
 }),
   "exams": zod.array(zod.object({
   "examId": zod.number(),

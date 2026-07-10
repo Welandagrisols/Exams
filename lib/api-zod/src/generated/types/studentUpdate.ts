@@ -17,4 +17,5 @@ export interface StudentUpdate {
   parentEmail?: string;
   nationality?: string;
   notes?: string;
+  feeBalance?: string;
 }

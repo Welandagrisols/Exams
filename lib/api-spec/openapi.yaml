@@ -241,6 +241,54 @@ paths:
         "204":
           description: Deleted
 
+  /students/fee-balances/bulk:
+    post:
+      operationId: bulkUpdateFeeBalances
+      tags: [students]
+      summary: Bulk update student fee balances (e.g. from an OCR-scanned fee sheet)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeBalanceBulkUpdateInput"
+      responses:
+        "200":
+          description: Number of students updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated]
+                properties:
+                  updated:
+                    type: integer
+
+  /students/fee-reminders:
+    get:
+      operationId: listFeeReminderCandidates
+      tags: [students]
+      summary: List students whose fee balance is at or above a threshold
+      parameters:
+        - name: minBalance
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: classId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Matching students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeeReminderCandidate"
+
   /learning-areas:
     get:
       operationId: listLearningAreas
@@ -750,6 +798,8 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        feeBalance:
+          type: ["string", "null"]
 
     StudentInput:
       type: object
@@ -799,6 +849,46 @@ components:
           type: string
         notes:
           type: string
+        feeBalance:
+          type: string
+
+    FeeBalanceBulkUpdateInput:
+      type: object
+      required: [updates]
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            required: [studentId, feeBalance]
+            properties:
+              studentId:
+                type: integer
+              feeBalance:
+                type: string
+
+    FeeReminderCandidate:
+      type: object
+      required: [id, name, admissionNo, classId, feeBalance]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        admissionNo:
+          type: string
+        classId:
+          type: integer
+        className:
+          type: ["string", "null"]
+        feeBalance:
+          type: string
+        parentName:
+          type: ["string", "null"]
+        parentPhone:
+          type: ["string", "null"]
+        parentEmail:
+          type: ["string", "null"]
 
     LearningArea:
       type: object
