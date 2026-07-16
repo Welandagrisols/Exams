@@ -16,9 +16,15 @@ type Student = {
   feeBalance: string | null;
 };
 
-function formatKsh(value: string | null): string {
-  const n = parseFloat(value ?? "0");
-  return `Ksh ${n.toLocaleString("en-KE")}`;
+function parseFeeBalance(value: string | null | undefined): number {
+  // Strip commas/currency symbols in case of formatted input, then parse
+  const cleaned = String(value ?? "0").replace(/[^0-9.-]/g, "");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatKsh(value: string | null | undefined): string {
+  return `Ksh ${parseFeeBalance(value).toLocaleString("en-KE")}`;
 }
 
 export default function FeesScreen() {
@@ -32,10 +38,10 @@ export default function FeesScreen() {
   });
 
   const withBalance = (data ?? [])
-    .filter(s => parseFloat(s.feeBalance ?? "0") > 0)
-    .sort((a, b) => parseFloat(b.feeBalance ?? "0") - parseFloat(a.feeBalance ?? "0"));
+    .filter(s => parseFeeBalance(s.feeBalance) > 0)
+    .sort((a, b) => parseFeeBalance(b.feeBalance) - parseFeeBalance(a.feeBalance));
 
-  const totalOutstanding = withBalance.reduce((sum, s) => sum + parseFloat(s.feeBalance ?? "0"), 0);
+  const totalOutstanding = withBalance.reduce((sum, s) => sum + parseFeeBalance(s.feeBalance), 0);
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },

@@ -153,7 +153,7 @@ export default function AddStudentScreen() {
         body: JSON.stringify({
           name: form.name.trim(),
           admissionNo: form.admissionNo.trim(),
-          classId: parseInt(classId),
+          classId: parseInt(Array.isArray(classId) ? classId[0] : classId),
           gender: form.gender || undefined,
           dateOfBirth: form.dateOfBirth || undefined,
           parentName: form.parentName || undefined,

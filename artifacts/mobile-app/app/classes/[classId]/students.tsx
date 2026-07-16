@@ -177,7 +177,7 @@ export default function StudentsScreen() {
       renderItem={({ item }) => (
         <View style={styles.item}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{(item.name?.trim().charAt(0) ?? "?").toUpperCase()}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>

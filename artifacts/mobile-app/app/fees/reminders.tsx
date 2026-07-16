@@ -60,9 +60,14 @@ export default function FeeRemindersScreen() {
       Alert.alert("Enter a threshold", "Please enter a valid minimum balance amount.");
       return;
     }
-    const result = await refetch();
-    if (result.data) {
-      setSelected(new Set(result.data.filter(c => c.parentPhone).map(c => c.id)));
+    try {
+      const result = await refetch();
+      if (result.error) throw result.error;
+      if (result.data) {
+        setSelected(new Set(result.data.filter(c => c.parentPhone).map(c => c.id)));
+      }
+    } catch (err: any) {
+      Alert.alert("Search failed", err.message ?? "Could not load fee reminder candidates.");
     }
     setSearched(true);
   };

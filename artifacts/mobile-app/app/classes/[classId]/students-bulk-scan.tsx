@@ -157,32 +157,32 @@ export default function BulkScanStudentsScreen() {
       return;
     }
     setSaving(true);
-    let successCount = 0;
     try {
-      for (const row of validRows) {
-        try {
-          await apiFetch(`/students`, {
-            method: "POST",
-            body: JSON.stringify({
+      const resolvedClassId = parseInt(Array.isArray(classId) ? classId[0] : classId);
+      const result = await apiFetch<{ created: number; skipped: number; errors: string[] }>(
+        `/students/import/confirm`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            classId: resolvedClassId,
+            rows: validRows.map((row) => ({
               name: row.name.trim(),
               admissionNo: row.admissionNo.trim(),
-              classId: parseInt(classId),
-              gender: row.gender || undefined,
-              dateOfBirth: row.dateOfBirth || undefined,
-              parentName: row.parentName || undefined,
-              parentPhone: row.parentPhone || undefined,
-              parentEmail: row.parentEmail || undefined,
-              nationality: row.nationality || undefined,
-              notes: row.notes || undefined,
-            }),
-          });
-          successCount++;
-        } catch {
-          // continue on per-row failure (e.g. duplicate admission no.), report at the end
+              gender: row.gender || null,
+              dateOfBirth: row.dateOfBirth || null,
+              parentName: row.parentName || null,
+              parentPhone: row.parentPhone || null,
+              parentEmail: row.parentEmail || null,
+              nationality: row.nationality || null,
+              notes: row.notes || null,
+            })),
+          }),
         }
-      }
+      );
       queryClient.invalidateQueries({ queryKey: ["/students", classId] });
-      setSaved({ count: successCount });
+      setSaved({ count: result.created + result.skipped });
+    } catch (err: any) {
+      Alert.alert("Save failed", err.message ?? "Could not save students.");
     } finally {
       setSaving(false);
     }

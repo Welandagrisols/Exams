@@ -128,7 +128,8 @@ export default function ScanFeeSheetScreen() {
 
   const handleSaveAll = async () => {
     if (!entries) return;
-    const matchedEntries = entries.filter(e => e.matched && e.studentId && e.balance && parseFloat(e.balance) > 0);
+    // Allow balance of 0 so teachers can zero out a cleared debt; only skip truly blank/invalid
+    const matchedEntries = entries.filter(e => e.matched && e.studentId && e.balance !== "" && !isNaN(parseFloat(e.balance)));
     if (matchedEntries.length === 0) {
       Alert.alert("Nothing to save", "No matched students with a valid balance were found.");
       return;
