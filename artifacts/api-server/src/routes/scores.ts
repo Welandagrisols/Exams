@@ -100,4 +100,60 @@ router.post("/scores", async (req, res): Promise<void> => {
   res.json(UpsertScoresResponse.parse(result));
 });
 
+// Bulk upsert scores for multiple students in one exam — used by OCR upload
+router.post("/scores/bulk", async (req, res): Promise<void> => {
+  const { examId, students } = req.body;
+  if (!examId || !Array.isArray(students) || students.length === 0) {
+    res.status(400).json({ error: "examId and students array are required" });
+    return;
+  }
+  const parsedExamId = parseInt(examId);
+  if (isNaN(parsedExamId)) {
+    res.status(400).json({ error: "examId must be a number" });
+    return;
+  }
+
+  const areaMap = new Map(
+    (await db.select().from(learningAreasTable)).map((a) => [a.id, a])
+  );
+
+  let saved = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  await db.transaction(async (tx) => {
+    for (const student of students) {
+      const studentId = parseInt(student?.studentId);
+      if (isNaN(studentId)) { skipped++; continue; }
+      const scores = Array.isArray(student?.scores) ? student.scores : [];
+      const validScores = scores.filter((s: any) => {
+        const m = parseFloat(s?.marks);
+        return !isNaN(parseInt(s?.learningAreaId)) && !isNaN(m) && m >= 0;
+      });
+      for (const entry of validScores) {
+        try {
+          await tx
+            .insert(scoresTable)
+            .values({
+              studentId,
+              examId: parsedExamId,
+              learningAreaId: parseInt(entry.learningAreaId),
+              marks: String(parseFloat(entry.marks)),
+            })
+            .onConflictDoUpdate({
+              target: [scoresTable.studentId, scoresTable.examId, scoresTable.learningAreaId],
+              set: { marks: String(parseFloat(entry.marks)) },
+            });
+          saved++;
+        } catch (err: any) {
+          errors.push(`student ${studentId} area ${entry.learningAreaId}: ${err.message}`);
+          skipped++;
+        }
+      }
+    }
+  });
+
+  res.json({ saved, skipped, errors });
+});
+
 export default router;

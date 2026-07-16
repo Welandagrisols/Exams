@@ -78,16 +78,32 @@ export default function OcrUpload() {
     if (!result) return;
     setSaving(true);
     try {
-      for (const row of result.scores) {
-        if (!row.studentId) continue;
-        const scores = row.marks
-          .map(m => ({ learningAreaId: m.learningAreaId, marks: parseFloat(editedMarks[`${row.studentId}-${m.learningAreaId}`] ?? "") }))
-          .filter(s => !isNaN(s.marks));
-        if (scores.length === 0) continue;
-        await upsertScores.mutateAsync({ data: { studentId: row.studentId, examId, scores } });
+      const students = result.scores
+        .filter(row => row.studentId)
+        .map(row => ({
+          studentId: row.studentId!,
+          scores: row.marks
+            .map(m => ({ learningAreaId: m.learningAreaId, marks: parseFloat(editedMarks[`${row.studentId}-${m.learningAreaId}`] ?? "") }))
+            .filter(s => !isNaN(s.marks) && s.marks >= 0),
+        }))
+        .filter(s => s.scores.length > 0);
+
+      if (students.length === 0) {
+        toast({ title: "Nothing to save", description: "No matched students have valid marks entered.", variant: "destructive" });
+        return;
       }
+
+      const res = await authFetch(`/api/scores/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ examId, students }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Save failed");
+      const { saved: count, errors } = await res.json();
       setSaved(true);
-      toast({ title: "All marks saved successfully!" });
+      queryClient.invalidateQueries({ queryKey: getGetExamQueryKey(examId) });
+      toast({ title: `${count} mark${count !== 1 ? "s" : ""} saved successfully!` });
+      if (errors?.length) console.warn("Partial save errors:", errors);
     } catch (err: any) {
       toast({ title: "Save failed", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }

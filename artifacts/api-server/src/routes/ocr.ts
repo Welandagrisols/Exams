@@ -84,8 +84,25 @@ Rules:
 
     const parsed = JSON.parse(extractJson(result.response.text()));
 
+    const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
     const enriched = (parsed.scores ?? []).map((row: any) => {
-      const student = students.find(s => s.admissionNo === row.admissionNo || s.name === row.studentName);
+      // 1. Exact admission number match (most reliable)
+      let student = students.find(s => s.admissionNo && row.admissionNo && s.admissionNo === row.admissionNo);
+      // 2. Exact normalised name match
+      if (!student && row.studentName) {
+        const rowNorm = normalize(row.studentName);
+        student = students.find(s => normalize(s.name) === rowNorm);
+      }
+      // 3. Partial match: all words in AI name appear in DB name (handles middle-name omissions)
+      if (!student && row.studentName) {
+        const rowWords = normalize(row.studentName).split(" ").filter((w: string) => w.length > 1);
+        if (rowWords.length >= 2) {
+          student = students.find(s => {
+            const dbNorm = normalize(s.name);
+            return rowWords.every((w: string) => dbNorm.includes(w));
+          });
+        }
+      }
       return {
         studentId: student?.id ?? null,
         studentName: row.studentName,
@@ -191,18 +208,28 @@ Rules:
 
     const parsed = JSON.parse(extractJson(result.response.text()));
 
+    const normFee = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
     const entries = (parsed.entries ?? []).map((entry: any) => {
+      // 1. Exact admission number
       let student = allStudents.find(s =>
         entry.admissionNo && entry.admissionNo !== "" && s.admissionNo === entry.admissionNo
       );
+      // 2. Exact normalised name
       if (!student && entry.studentName) {
-        const nameLower = (entry.studentName as string).toLowerCase().trim();
-        student = allStudents.find(s => s.name.toLowerCase() === nameLower);
-        if (!student) {
+        const nameLower = normFee(entry.studentName as string);
+        student = allStudents.find(s => normFee(s.name) === nameLower);
+      }
+      // 3. Strict fuzzy: ALL words from OCR must appear in DB name AND vice-versa (at least 2 significant words each)
+      if (!student && entry.studentName) {
+        const nameLower = normFee(entry.studentName as string);
+        const ocrWords = nameLower.split(/\s+/).filter((w: string) => w.length > 1);
+        if (ocrWords.length >= 2) {
           student = allStudents.find(s => {
-            const sLower = s.name.toLowerCase();
-            const words = nameLower.split(/\s+/).filter((w: string) => w.length > 1);
-            return words.length >= 2 && words.every((w: string) => sLower.includes(w));
+            const dbWords = normFee(s.name).split(/\s+/).filter((w: string) => w.length > 1);
+            // All OCR words in DB name AND at least 2 DB words in OCR (prevents "John" matching "John Doe Smith")
+            const ocrInDb = ocrWords.every((w: string) => normFee(s.name).includes(w));
+            const dbInOcr = dbWords.filter((w: string) => nameLower.includes(w)).length >= Math.min(2, dbWords.length);
+            return ocrInDb && dbInOcr;
           });
         }
       }

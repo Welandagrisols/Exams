@@ -64,7 +64,7 @@ router.post("/students/import/confirm", async (req, res): Promise<void> => {
 
   for (const row of valid) {
     try {
-      const [inserted] = await db.insert(studentsTable).values({
+      const values = {
         name: row.name,
         admissionNo: row.admissionNo,
         classId: parseInt(classId),
@@ -75,9 +75,23 @@ router.post("/students/import/confirm", async (req, res): Promise<void> => {
         parentEmail: row.parentEmail || null,
         nationality: row.nationality || null,
         notes: row.notes || null,
-      }).onConflictDoNothing().returning();
-      if (inserted) results.created++;
-      else results.skipped++;
+      };
+      await db.insert(studentsTable).values(values)
+        .onConflictDoUpdate({
+          target: studentsTable.admissionNo,
+          set: {
+            name: values.name,
+            classId: values.classId,
+            gender: values.gender,
+            dateOfBirth: values.dateOfBirth,
+            parentName: values.parentName,
+            parentPhone: values.parentPhone,
+            parentEmail: values.parentEmail,
+            nationality: values.nationality,
+            notes: values.notes,
+          },
+        });
+      results.created++;
     } catch (err: any) {
       results.skipped++;
       results.errors.push(`${row.name} (${row.admissionNo}): ${err.message}`);

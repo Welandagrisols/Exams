@@ -177,17 +177,25 @@ export default function OcrUploadScreen() {
     if (!result) return;
     setSaving(true);
     try {
-      for (const row of result.scores) {
-        if (!row.studentId) continue;
-        const scores = row.marks
-          .map((m) => ({ learningAreaId: m.learningAreaId, marks: parseFloat(editedMarks[`${row.studentId}-${m.learningAreaId}`] ?? "") }))
-          .filter((s) => !isNaN(s.marks));
-        if (scores.length === 0) continue;
-        await apiFetch(`/scores`, {
-          method: "POST",
-          body: JSON.stringify({ studentId: row.studentId, examId: parseInt(examId), scores }),
-        });
+      const students = result.scores
+        .filter((row) => row.studentId)
+        .map((row) => ({
+          studentId: row.studentId!,
+          scores: row.marks
+            .map((m) => ({ learningAreaId: m.learningAreaId, marks: parseFloat(editedMarks[`${row.studentId}-${m.learningAreaId}`] ?? "") }))
+            .filter((s) => !isNaN(s.marks) && s.marks >= 0),
+        }))
+        .filter((s) => s.scores.length > 0);
+
+      if (students.length === 0) {
+        Alert.alert("Nothing to save", "No matched students have valid marks entered.");
+        return;
       }
+
+      await apiFetch(`/scores/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ examId: parseInt(examId), students }),
+      });
       setSaved(true);
     } catch (err: any) {
       Alert.alert("Save failed", err.message ?? "Could not save marks.");

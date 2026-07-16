@@ -114,7 +114,8 @@ export default defineConfig({
     fs: { strict: true },
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        // Artifact system injects PORT=8080 for the API artifact; fall back to 8000 for standalone mode
+        target: `http://localhost:${process.env.API_SERVER_PORT ?? "8080"}`,
         changeOrigin: true,
       },
     },
