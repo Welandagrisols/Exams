@@ -9,11 +9,21 @@ import { apiFetch, getRubricColor } from "@/lib/api";
 import palette from "@/constants/colors";
 import * as Haptics from "expo-haptics";
 
+type Subject = {
+  learningAreaId: number;
+  learningAreaName: string;
+  abbreviation: string;
+  marks: number;
+  maxMarks: number;
+  percentage: number;
+  rubricGrade: string;
+};
+
 type Report = {
   student: { name: string; admissionNo: string; className: string };
   exam: { name: string; term: number; year: number };
   school: { name: string; motto: string | null };
-  subjects: { learningAreaId: number; learningAreaName: string; marks: number; maxMarks: number; percentage: number; rubricGrade: string }[];
+  subjects: Subject[];
   totalMarks: number;
   totalMaxMarks: number;
   averagePercentage: number;
@@ -23,6 +33,17 @@ type Report = {
   teacherComment: string | null;
   principalComment: string | null;
 };
+
+type TrendExam = {
+  examId: number;
+  examName: string;
+  term: number;
+  year: number;
+  averagePercentage: number;
+  classAverage: number | null;
+};
+
+type TrendData = { student: { name: string }; exams: TrendExam[] };
 
 export default function ReportScreen() {
   const scheme = useColorScheme();
@@ -35,24 +56,70 @@ export default function ReportScreen() {
     enabled: !!examId && !!studentId,
   });
 
+  const { data: trends } = useQuery<TrendData>({
+    queryKey: ["/trends/student", studentId],
+    queryFn: () => apiFetch(`/trends/student/${studentId}`),
+    enabled: !!studentId,
+  });
+
+  const trendRows = (trends?.exams ?? []).sort(
+    (a, b) => a.year !== b.year ? a.year - b.year : a.term - b.term
+  );
+  const hasTrend = trendRows.length > 1;
+
   const handleShare = async () => {
     if (!data) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const text = [
-      `${data.school.name}`,
-      `${data.exam.name} — Term ${data.exam.term}, ${data.exam.year}`,
-      ``,
-      `Student: ${data.student.name} (${data.student.admissionNo})`,
-      `Class: ${data.student.className}`,
-      `Rank: ${data.rank} of ${data.classSize}`,
-      ``,
-      `RESULTS:`,
-      ...data.subjects.map(s => `  ${s.learningAreaName}: ${s.marks}/${s.maxMarks} (${s.rubricGrade})`),
-      ``,
-      `Overall: ${data.totalMarks}/${data.totalMaxMarks} — ${data.averagePercentage.toFixed(1)}% — ${data.overallGrade}`,
-      data.teacherComment ? `\nTeacher: ${data.teacherComment}` : "",
-    ].join("\n");
-    Share.share({ message: text, title: `Report — ${data.student.name}` });
+
+    const divider = "─────────────────────────";
+
+    // Subject rows — pad abbreviation to 5 chars for alignment
+    const subjectLines = data.subjects.map(s => {
+      const abbr = (s.abbreviation ?? s.learningAreaName.slice(0, 5)).padEnd(6);
+      const marks = `${s.marks}/${s.maxMarks}`.padEnd(8);
+      const pct = `${s.percentage.toFixed(0)}%`.padEnd(6);
+      return `${abbr}${marks}${pct}${s.rubricGrade}`;
+    });
+
+    // Trend rows
+    const trendLines = hasTrend
+      ? [
+          "",
+          "PERFORMANCE TREND",
+          ...trendRows.map(e => {
+            const classStr = e.classAverage != null ? ` | Class: ${e.classAverage.toFixed(1)}%` : "";
+            const isCurrent = e.examId === parseInt(examId ?? "0");
+            return `T${e.term} ${e.year}: ${e.averagePercentage.toFixed(1)}%${classStr}${isCurrent ? " ◀ this exam" : ""}`;
+          }),
+        ]
+      : [];
+
+    const lines = [
+      `📚 ${data.school.name}`,
+      data.school.motto ? `"${data.school.motto}"` : null,
+      "",
+      "TERMLY PERFORMANCE REPORT",
+      `Exam: ${data.exam.name} | Term: ${data.exam.term} | Year: ${data.exam.year}`,
+      divider,
+      `Student : ${data.student.name}`,
+      `Adm No  : ${data.student.admissionNo}`,
+      `Class   : ${data.student.className}`,
+      `Rank    : ${data.rank} of ${data.classSize}`,
+      divider,
+      "ACADEMIC PERFORMANCE",
+      `${"SUBJ".padEnd(6)}${"MARKS".padEnd(8)}${"PCT".padEnd(6)}GRADE`,
+      ...subjectLines,
+      divider,
+      `${"TOTAL".padEnd(6)}${`${data.totalMarks}/${data.totalMaxMarks}`.padEnd(8)}${`${data.averagePercentage.toFixed(1)}%`.padEnd(6)}${data.overallGrade}`,
+      ...trendLines,
+      ...(data.teacherComment ? ["", `Teacher's Remarks:`, data.teacherComment] : []),
+      ...(data.principalComment ? ["", `Principal's Remarks:`, data.principalComment] : []),
+    ].filter(l => l !== null) as string[];
+
+    Share.share({
+      message: lines.join("\n"),
+      title: `Report — ${data.student.name}`,
+    });
   };
 
   const styles = StyleSheet.create({
@@ -115,6 +182,7 @@ export default function ReportScreen() {
       fontSize: 14,
       color: colors.foreground,
       marginBottom: 8,
+      marginTop: 4,
     },
     tableCard: {
       backgroundColor: colors.card,
@@ -187,6 +255,51 @@ export default function ReportScreen() {
       color: "#fff",
       textAlign: "right",
     },
+    // Trend section
+    trendCard: {
+      backgroundColor: colors.card,
+      borderRadius: colors.radius,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+      marginBottom: 12,
+    },
+    trendRow: {
+      flexDirection: "row",
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: "center",
+    },
+    trendRowCurrent: {
+      backgroundColor: colors.primary + "18",
+    },
+    trendLabel: {
+      fontFamily: "Poppins_500Medium",
+      fontSize: 13,
+      color: colors.foreground,
+      flex: 1,
+    },
+    trendStudentPct: {
+      fontFamily: "Poppins_700Bold",
+      fontSize: 13,
+      width: 56,
+      textAlign: "right",
+    },
+    trendClassPct: {
+      fontFamily: "Poppins_400Regular",
+      fontSize: 12,
+      color: colors.mutedForeground,
+      width: 72,
+      textAlign: "right",
+    },
+    trendDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: 8,
+    },
     commentCard: {
       backgroundColor: colors.card,
       borderRadius: colors.radius,
@@ -225,6 +338,16 @@ export default function ReportScreen() {
       fontSize: 15,
       color: "#fff",
     },
+    trendCaption: {
+      fontFamily: "Poppins_400Regular",
+      fontSize: 11,
+      color: colors.mutedForeground,
+      textAlign: "center",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
   });
 
   if (isLoading) {
@@ -236,6 +359,8 @@ export default function ReportScreen() {
   }
 
   if (!data) return null;
+
+  const currentExamId = parseInt(examId ?? "0");
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -268,20 +393,20 @@ export default function ReportScreen() {
       <View style={styles.tableCard}>
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeaderText, { flex: 1 }]}>Subject</Text>
-          <Text style={[styles.tableHeaderText, { width: 60, textAlign: "center" }]}>Marks</Text>
-          <Text style={[styles.tableHeaderText, { width: 50, textAlign: "center" }]}>%</Text>
-          <Text style={[styles.tableHeaderText, { width: 40, textAlign: "center" }]}>Grade</Text>
+          <Text style={[styles.tableHeaderText, { width: 64, textAlign: "center" }]}>Marks</Text>
+          <Text style={[styles.tableHeaderText, { width: 44, textAlign: "center" }]}>%</Text>
+          <Text style={[styles.tableHeaderText, { width: 44, textAlign: "center" }]}>Grade</Text>
         </View>
         {data.subjects.map((sub, i) => (
           <View key={sub.learningAreaId} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
             <Text style={[styles.tableCell, { flex: 1 }]} numberOfLines={1}>{sub.learningAreaName}</Text>
-            <Text style={[styles.tableCellBold, { width: 60, textAlign: "center" }]}>
+            <Text style={[styles.tableCellBold, { width: 64, textAlign: "center" }]}>
               {sub.marks}/{sub.maxMarks}
             </Text>
-            <Text style={[styles.tableCell, { width: 50, textAlign: "center" }]}>
+            <Text style={[styles.tableCell, { width: 44, textAlign: "center" }]}>
               {sub.percentage.toFixed(0)}%
             </Text>
-            <View style={{ width: 40, alignItems: "center" }}>
+            <View style={{ width: 44, alignItems: "center" }}>
               <View style={[styles.gradeBadge, { backgroundColor: getRubricColor(sub.rubricGrade) }]}>
                 <Text style={styles.gradeText}>{sub.rubricGrade}</Text>
               </View>
@@ -295,6 +420,55 @@ export default function ReportScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Performance Trajectory — student vs class average across all exams */}
+      {hasTrend && (
+        <>
+          <Text style={styles.sectionTitle}>Performance Trajectory</Text>
+          <View style={styles.trendCard}>
+            {/* Header */}
+            <View style={[styles.tableHeader]}>
+              <Text style={[styles.tableHeaderText, { flex: 1 }]}>Exam</Text>
+              <Text style={[styles.tableHeaderText, { width: 56, textAlign: "right" }]}>Student</Text>
+              <Text style={[styles.tableHeaderText, { width: 72, textAlign: "right" }]}>Class Avg</Text>
+            </View>
+            {trendRows.map((e) => {
+              const isCurrent = e.examId === currentExamId;
+              // Colour the student % dot based on performance vs class
+              const aboveClass = e.classAverage != null && e.averagePercentage >= e.classAverage;
+              const dotColor = isCurrent
+                ? colors.primary
+                : aboveClass ? "#10b981" : "#f59e0b";
+
+              return (
+                <View
+                  key={e.examId}
+                  style={[styles.trendRow, isCurrent && styles.trendRowCurrent]}
+                >
+                  <View style={[styles.trendDot, { backgroundColor: dotColor }]} />
+                  <Text style={styles.trendLabel} numberOfLines={1}>
+                    T{e.term} {e.year}{isCurrent ? " ◀" : ""}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.trendStudentPct,
+                      { color: aboveClass ? "#10b981" : colors.foreground },
+                    ]}
+                  >
+                    {e.averagePercentage.toFixed(1)}%
+                  </Text>
+                  <Text style={styles.trendClassPct}>
+                    {e.classAverage != null ? `${e.classAverage.toFixed(1)}%` : "—"}
+                  </Text>
+                </View>
+              );
+            })}
+            <Text style={styles.trendCaption}>
+              Green = above class average · ◀ = this exam
+            </Text>
+          </View>
+        </>
+      )}
 
       {/* Comments */}
       {(data.teacherComment || data.principalComment) && (
@@ -317,7 +491,7 @@ export default function ReportScreen() {
       {/* Share button */}
       <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.8}>
         <Ionicons name="share-outline" size={20} color="#fff" />
-        <Text style={styles.shareBtnText}>Share Report via SMS / WhatsApp</Text>
+        <Text style={styles.shareBtnText}>Share via WhatsApp / SMS</Text>
       </TouchableOpacity>
     </ScrollView>
   );
