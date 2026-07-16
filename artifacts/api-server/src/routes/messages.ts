@@ -148,6 +148,130 @@ router.post("/messages", async (req, res): Promise<void> => {
   res.status(201).json(message);
 });
 
+// ─── Broadcast exam results to all parents in one call ──────────────────────
+router.post("/messages/broadcast-results/:examId", async (req, res): Promise<void> => {
+  const examId = parseInt(req.params.examId);
+  if (isNaN(examId)) { res.status(400).json({ error: "Invalid examId" }); return; }
+
+  const atApiKey = process.env.AT_API_KEY;
+  const atUsername = process.env.AT_USERNAME;
+  const smsConfigured = !!(atApiKey && atUsername);
+
+  // Load exam + class
+  const [exam] = await db
+    .select({ id: examsTable.id, name: examsTable.name, term: examsTable.term, year: examsTable.year, classId: examsTable.classId })
+    .from(examsTable)
+    .where(eq(examsTable.id, examId));
+  if (!exam) { res.status(404).json({ error: "Exam not found" }); return; }
+
+  // Load all students in the class
+  const students = await db
+    .select({ id: studentsTable.id, name: studentsTable.name, parentName: studentsTable.parentName, parentPhone: studentsTable.parentPhone, parentEmail: studentsTable.parentEmail })
+    .from(studentsTable)
+    .where(eq(studentsTable.classId, exam.classId));
+
+  if (students.length === 0) { res.status(400).json({ error: "No students in class" }); return; }
+
+  // Create message record
+  const title = `${exam.name} Results`;
+  const body = `[Student Name] results for ${exam.name}, Term ${exam.term} ${exam.year}`;
+
+  const [message] = await db
+    .insert(messagesTable)
+    .values({ type: "exam_results", title, body, classId: exam.classId, examId: exam.id, recipientCount: students.length })
+    .returning();
+
+  await db.insert(messageRecipientsTable).values(
+    students.map(s => ({
+      messageId: message.id,
+      studentId: s.id,
+      studentName: s.name,
+      parentName: s.parentName ?? null,
+      parentPhone: s.parentPhone ?? null,
+      parentEmail: s.parentEmail ?? null,
+      feeBalance: null,
+    }))
+  );
+
+  // If SMS not configured, return early with the created message id
+  if (!smsConfigured) {
+    res.json({ messageId: message.id, sent: 0, noPhone: 0, failed: 0, total: students.length, smsConfigured: false });
+    return;
+  }
+
+  // Load scores for all students in this exam
+  const subjects = await db
+    .select({ id: learningAreasTable.id, abbreviation: learningAreasTable.abbreviation, maxMarks: learningAreasTable.maxMarks })
+    .from(learningAreasTable)
+    .orderBy(learningAreasTable.sortOrder);
+  const subjectMap = new Map(subjects.map(s => [s.id, s]));
+
+  const allScores = await db
+    .select({ studentId: scoresTable.studentId, learningAreaId: scoresTable.learningAreaId, marks: scoresTable.marks })
+    .from(scoresTable)
+    .where(eq(scoresTable.examId, examId));
+
+  const scoresByStudent = new Map<number, Array<{ abbr: string; marks: number; maxMarks: number }>>();
+  for (const score of allScores) {
+    const subj = subjectMap.get(score.learningAreaId);
+    if (!subj) continue;
+    if (!scoresByStudent.has(score.studentId)) scoresByStudent.set(score.studentId, []);
+    scoresByStudent.get(score.studentId)!.push({ abbr: subj.abbreviation, marks: parseFloat(score.marks as unknown as string), maxMarks: subj.maxMarks });
+  }
+
+  // Send SMS to each parent
+  const results = { messageId: message.id, sent: 0, noPhone: 0, failed: 0, total: students.length, smsConfigured: true, errors: [] as string[] };
+  const atEndpoint = "https://api.africastalking.com/version1/messaging";
+  const atSenderId = process.env.AT_SENDER_ID;
+
+  const recipients = await db
+    .select()
+    .from(messageRecipientsTable)
+    .where(eq(messageRecipientsTable.messageId, message.id));
+
+  for (const recipient of recipients) {
+    if (!recipient.parentPhone) { results.noPhone++; continue; }
+
+    const scores = scoresByStudent.get(recipient.studentId) ?? [];
+    let smsText: string;
+    if (scores.length > 0) {
+      const marksStr = scores.map(s => `${s.abbr}:${s.marks}`).join(", ");
+      const total = scores.reduce((sum, s) => sum + s.marks, 0);
+      const maxTotal = scores.reduce((sum, s) => sum + s.maxMarks, 0);
+      const pct = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      smsText = `${recipient.studentName} - ${exam.name} Results\n${marksStr}\nTotal: ${total}/${maxTotal} (${pct}%)`;
+    } else {
+      smsText = `${recipient.studentName} - ${exam.name} (Term ${exam.term} ${exam.year}): No scores recorded yet.`;
+    }
+
+    const phone = `+${normalizePhone(recipient.parentPhone)}`;
+    const formBody: Record<string, string> = { username: atUsername, to: phone, message: smsText };
+    if (atSenderId) formBody.from = atSenderId;
+
+    try {
+      const atRes = await fetch(atEndpoint, {
+        method: "POST",
+        headers: { apiKey: atApiKey, Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formBody).toString(),
+      });
+      const data = await atRes.json() as any;
+      const rData = data?.SMSMessageData?.Recipients?.[0];
+      if (rData?.statusCode === 101) {
+        results.sent++;
+        await db.update(messageRecipientsTable).set({ smsSentAt: new Date() }).where(eq(messageRecipientsTable.id, recipient.id));
+      } else {
+        results.failed++;
+        results.errors.push(`${recipient.studentName}: ${rData?.status ?? "Unknown"}`);
+      }
+    } catch (err: any) {
+      results.failed++;
+      results.errors.push(`${recipient.studentName}: ${err.message}`);
+    }
+  }
+
+  res.json(results);
+});
+
 router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
