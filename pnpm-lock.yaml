@@ -504,12 +504,18 @@ importers:
       expo-linking:
         specifier: ~7.1.5
         version: 7.1.7(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
+      expo-print:
+        specifier: ~14.0.1
+        version: 14.0.3(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))
       expo-router:
         specifier: ~5.1.0
         version: 5.1.11(c41c6a8f5d2630bdd4689994dc4de4ed)
       expo-secure-store:
         specifier: ~14.2.0
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))
+      expo-sharing:
+        specifier: ~12.0.1
+        version: 12.0.1(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))
       expo-splash-screen:
         specifier: ~0.30.10
         version: 0.30.10(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))
@@ -1587,7 +1593,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {node: '>=0.10.0'}
+    engines: {'0': node >=0.10.0}
 
   '@expo/cli@0.24.24':
     resolution: {integrity: sha512-XybHfF2QNPJNnHoUKHcG796iEkX5126UuTAs6MSpZuvZRRQRj/sGCLX+driCOVHbDOpcCOusMuHrhxHbtTApyg==}
@@ -4342,6 +4348,12 @@ packages:
   expo-modules-core@2.5.0:
     resolution: {integrity: sha512-aIbQxZE2vdCKsolQUl6Q9Farlf8tjh/ROR4hfN1qT7QBGPl1XrJGnaOKkcgYaGrlzCPg/7IBe0Np67GzKMZKKQ==}
 
+  expo-print@14.0.3:
+    resolution: {integrity: sha512-VEGl7SX3q2Z3ZKwvxtOBAlXm9yDX8Jodewr+kouQcg2EaV0ciAH9rqLwRWZhAtEETpVdEG53ow7IAmwJU7jInA==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
+
   expo-router@5.1.11:
     resolution: {integrity: sha512-6YQGqQM2rviVSiU6++hrJDPMByHZ7Oiux4XmgoSaGdaHku5QOn9911f2puEUZh2H9ALKBipw5v3ZkrECBd6Zbw==}
     peerDependencies:
@@ -4366,6 +4378,11 @@ packages:
 
   expo-secure-store@14.2.4:
     resolution: {integrity: sha512-ePaz4fnTitJJZjAiybaVYGfLWWyaEtepZC+vs9ZBMhQMfG5HUotIcVsDaSo3FnwpHmgwsLVPY2qFeryI6AtULw==}
+    peerDependencies:
+      expo: '*'
+
+  expo-sharing@12.0.1:
+    resolution: {integrity: sha512-wBT+WeXwapj/9NWuLJO01vi9bdlchYu/Q/xD8slL/Ls4vVYku8CPqzkTtDFcjLrjtlJqyeHsdQXwKLvORmBIew==}
     peerDependencies:
       expo: '*'
 
@@ -11934,6 +11951,11 @@ snapshots:
     dependencies:
       invariant: 2.2.4
 
+  expo-print@14.0.3(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)):
+    dependencies:
+      expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
+      react-native: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)
+
   expo-router@5.1.11(c41c6a8f5d2630bdd4689994dc4de4ed):
     dependencies:
       '@expo/metro-runtime': 5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))
@@ -11965,6 +11987,10 @@ snapshots:
       - supports-color
 
   expo-secure-store@14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)):
+    dependencies:
+      expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
+
+  expo-sharing@12.0.1(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)):
     dependencies:
       expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(graphql@16.8.1)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
 
