@@ -146,7 +146,7 @@ export default function ClassTrendsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data!.exams.map(e => (
+                    {data?.exams.map(e => (
                       <tr key={e.examId} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-3">
                           <Link href={`/exams/${e.examId}/analytics`} className="font-semibold text-blue-600 hover:underline">

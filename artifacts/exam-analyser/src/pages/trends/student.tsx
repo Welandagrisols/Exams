@@ -172,7 +172,7 @@ export default function StudentTrendsPage() {
                 <h3 className="font-bold text-slate-800">Exam History</h3>
               </div>
               <div className="divide-y divide-slate-50">
-                {data!.exams.map(e => (
+                {data?.exams.map(e => (
                   <div key={e.examId} className="px-6 py-4 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <Link href={`/reports/${e.examId}/${studentId}`} className="font-bold text-slate-800 hover:text-blue-600 transition-colors text-sm truncate block">

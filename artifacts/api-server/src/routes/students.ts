@@ -200,7 +200,8 @@ router.delete("/students/:id/photo", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid student id" }); return; }
 
-  await db.update(studentsTable).set({ photoUrl: null }).where(eq(studentsTable.id, id));
+  const [updated] = await db.update(studentsTable).set({ photoUrl: null }).where(eq(studentsTable.id, id)).returning({ id: studentsTable.id });
+  if (!updated) { res.status(404).json({ error: "Student not found" }); return; }
   res.json({ photoUrl: null });
 });
 
