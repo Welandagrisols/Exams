@@ -37,14 +37,16 @@ export default function MessageDetailScreen() {
 
   const [message, setMessage] = useState<MessageDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
   const [sendingId, setSendingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    setLoadError(null);
     apiFetch<MessageDetail>(`/messages/${id}`)
       .then(setMessage)
-      .catch(() => {})
+      .catch((err: any) => setLoadError(err?.message ?? "Could not load message."))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -192,7 +194,16 @@ export default function MessageDetailScreen() {
     );
   }
 
-  if (!message) return null;
+  if (loadError || !message) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", padding: 32 }]}>
+        <Ionicons name="warning-outline" size={40} color={colors.mutedForeground} />
+        <Text style={{ fontFamily: "Poppins_500Medium", fontSize: 14, color: colors.mutedForeground, textAlign: "center", marginTop: 12 }}>
+          {loadError ?? "Message not found."}
+        </Text>
+      </View>
+    );
+  }
 
   const withPhone = message.recipients.filter(r => r.parentPhone);
 

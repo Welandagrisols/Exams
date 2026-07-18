@@ -28,6 +28,7 @@ export function thresholdsFromSchool(school: {
 }
 
 export function getRubricGrade(marks: number, maxMarks: number, t: RubricThresholds = DEFAULT_THRESHOLDS): RubricGrade {
+  if (maxMarks <= 0) return "BE1";
   const pct = (marks / maxMarks) * 100;
   if (pct >= t.ee2) return "EE2";
   if (pct >= t.ee1) return "EE1";

@@ -76,7 +76,7 @@ async function buildReport(
   const subjects = scoreRows.map((r) => {
     const marks = parseFloat(r.marks as unknown as string);
     const maxMarks = r.maxMarks ?? 100;
-    const percentage = (marks / maxMarks) * 100;
+    const percentage = maxMarks > 0 ? (marks / maxMarks) * 100 : 0;
     const grade = getRubricGrade(marks, maxMarks, thresholds);
     return {
       learningAreaId: r.learningAreaId!,
