@@ -201,7 +201,7 @@ export default function ReportScreen() {
   const colors = scheme === "dark" ? palette.dark : palette.light;
   const { examId, studentId } = useLocalSearchParams<{ examId: string; studentId: string }>();
 
-  const { data, isLoading } = useQuery<Report>({
+  const { data, isLoading, isError } = useQuery<Report>({
     queryKey: ["/reports", examId, studentId],
     queryFn: () => apiFetch(`/reports/${examId}/${studentId}`),
     enabled: !!examId && !!studentId,
@@ -228,10 +228,6 @@ export default function ReportScreen() {
         html,
         base64: false,
       });
-      // Rename to something meaningful before sharing
-      const fileName = `Report_${data.student.admissionNo}_T${data.exam.term}_${data.exam.year}.pdf`;
-      const destUri = uri.replace(/[^/]+$/, fileName);
-      // expo-print returns a cache file; we share it directly
       const canShare = await Sharing.isAvailableAsync();
       if (!canShare) {
         Alert.alert("Sharing unavailable", "PDF sharing is not supported on this device.");
@@ -307,7 +303,16 @@ export default function ReportScreen() {
     );
   }
 
-  if (!data) return null;
+  if (isError || !data) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 32, backgroundColor: colors.background }}>
+        <Ionicons name="warning-outline" size={40} color={colors.mutedForeground} />
+        <Text style={{ fontFamily: "Poppins_500Medium", fontSize: 14, color: colors.mutedForeground, textAlign: "center", marginTop: 12 }}>
+          Could not load report. Please try again.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
