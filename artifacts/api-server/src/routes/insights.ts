@@ -66,7 +66,7 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
 
   const subjectSummaries = Array.from(areaMap.values()).map(area => {
     const mean = area.marks.reduce((s, m) => s + m, 0) / area.marks.length;
-    const pct = (mean / area.maxMarks) * 100;
+    const pct = area.maxMarks > 0 ? (mean / area.maxMarks) * 100 : 0;
     const grade = getRubricGrade(mean, area.maxMarks, thresholds);
     const below = area.marks.filter(m =>
       getRubricGrade(m, area.maxMarks, thresholds).startsWith("AE") ||
@@ -97,7 +97,9 @@ router.get("/insights/:examId", async (req, res): Promise<void> => {
   }
 
   const totalStudents = studentMap.size;
-  const overallMeanPct = subjectSummaries.reduce((s, x) => s + parseFloat(x.meanPct), 0) / subjectSummaries.length;
+  const overallMeanPct = subjectSummaries.length > 0
+    ? subjectSummaries.reduce((s, x) => s + parseFloat(x.meanPct), 0) / subjectSummaries.length
+    : 0;
 
   const rubricScale = [
     `EE2 ≥ ${thresholds.ee2}%`,

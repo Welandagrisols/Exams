@@ -201,7 +201,7 @@ export default function FeeRemindersScreen() {
             </View>
           ) : (
             <>
-              {candidates!.map((c) => (
+              {(candidates ?? []).map((c) => (
                 <TouchableOpacity key={c.id} style={styles.item} onPress={() => c.parentPhone && toggle(c.id)} activeOpacity={0.75}>
                   <View style={[styles.checkbox, { borderColor: selected.has(c.id) ? colors.primary : colors.border, backgroundColor: selected.has(c.id) ? colors.primary : "transparent" }]}>
                     {selected.has(c.id) && <Ionicons name="checkmark" size={14} color="#fff" />}

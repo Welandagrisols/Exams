@@ -98,7 +98,7 @@ router.get("/analytics/:examId", async (req, res): Promise<void> => {
         overallDist[grade]++;
       }
       const mean = marks.length > 0 ? sum / marks.length : 0;
-      const meanPercentage = (mean / maxMarks) * 100;
+      const meanPercentage = maxMarks > 0 ? (mean / maxMarks) * 100 : 0;
       const meanGrade = getRubricGrade(mean, maxMarks, thresholds);
       const meanPoints = getRubricPoints(meanGrade);
       allAreaMeanPcts.push(meanPercentage);

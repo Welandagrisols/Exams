@@ -88,7 +88,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
         const marks = areaMarks.get(la.id) ?? [];
         if (marks.length === 0) continue;
         const avg = marks.reduce((s, m) => s + m, 0) / marks.length;
-        areaPcts.push((avg / la.maxMarks) * 100);
+        areaPcts.push(la.maxMarks > 0 ? (avg / la.maxMarks) * 100 : 0);
       }
       const classAvg = areaPcts.length > 0 ? areaPcts.reduce((s, p) => s + p, 0) / areaPcts.length : 0;
 
