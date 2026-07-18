@@ -153,6 +153,7 @@ export default function ScoresScreen() {
   }
 
   function getGrade(marks: number, max: number): string {
+    if (max <= 0) return "BE";
     const pct = (marks / max) * 100;
     if (pct >= 80) return "EE";
     if (pct >= 60) return "ME";

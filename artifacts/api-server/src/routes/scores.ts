@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
-import { db, scoresTable, learningAreasTable } from "@workspace/db";
+import { and, asc, eq } from "drizzle-orm";
+import { db, scoresTable, learningAreasTable, examsTable, studentsTable } from "@workspace/db";
 import { ListScoresQueryParams, ListScoresResponse, UpsertScoresBody, UpsertScoresResponse } from "@workspace/api-zod";
 import { getRubricGrade, getRubricPoints } from "../lib/rubric";
 
@@ -44,6 +44,74 @@ router.get("/scores", async (req, res): Promise<void> => {
     };
   });
   res.json(ListScoresResponse.parse(result));
+});
+
+// Summary endpoint used by the mobile scores read-only view
+router.get("/scores/:examId", async (req, res): Promise<void> => {
+  const examId = parseInt(req.params.examId, 10);
+  if (isNaN(examId) || examId <= 0) { res.status(400).json({ error: "Invalid examId" }); return; }
+
+  const [exam] = await db
+    .select({ id: examsTable.id, name: examsTable.name, classId: examsTable.classId })
+    .from(examsTable)
+    .where(eq(examsTable.id, examId));
+  if (!exam) { res.status(404).json({ error: "Exam not found" }); return; }
+
+  const [students, scoreRows, areas] = await Promise.all([
+    db.select({ id: studentsTable.id, name: studentsTable.name, admissionNo: studentsTable.admissionNo })
+      .from(studentsTable)
+      .where(eq(studentsTable.classId, exam.classId))
+      .orderBy(asc(studentsTable.name)),
+    db.select({
+        studentId: scoresTable.studentId,
+        learningAreaId: scoresTable.learningAreaId,
+        marks: scoresTable.marks,
+        learningAreaName: learningAreasTable.name,
+        abbreviation: learningAreasTable.abbreviation,
+        maxMarks: learningAreasTable.maxMarks,
+      })
+      .from(scoresTable)
+      .leftJoin(learningAreasTable, eq(learningAreasTable.id, scoresTable.learningAreaId))
+      .where(eq(scoresTable.examId, examId)),
+    db.select({ id: learningAreasTable.id, name: learningAreasTable.name, abbreviation: learningAreasTable.abbreviation, maxMarks: learningAreasTable.maxMarks })
+      .from(learningAreasTable)
+      .orderBy(asc(learningAreasTable.sortOrder)),
+  ]);
+
+  // Group scores by studentId
+  const scoresByStudent = new Map<number, typeof scoreRows>();
+  for (const s of scoreRows) {
+    if (!scoresByStudent.has(s.studentId)) scoresByStudent.set(s.studentId, []);
+    scoresByStudent.get(s.studentId)!.push(s);
+  }
+
+  // Only return students who have at least one score entered
+  const rows = students
+    .filter(st => scoresByStudent.has(st.id))
+    .map(st => {
+      const studentScores = scoresByStudent.get(st.id) ?? [];
+      const scoreMap = new Map(studentScores.map(s => [s.learningAreaId, s]));
+      let total = 0;
+      let maxTotal = 0;
+      const subjectScores = areas
+        .filter(la => scoreMap.has(la.id))
+        .map(la => {
+          const s = scoreMap.get(la.id)!;
+          const marks = parseFloat(s.marks as unknown as string);
+          total += isNaN(marks) ? 0 : marks;
+          maxTotal += la.maxMarks;
+          return {
+            learningAreaId: la.id,
+            learningAreaName: la.name,
+            abbreviation: la.abbreviation,
+            marks: isNaN(marks) ? null : marks,
+            maxMarks: la.maxMarks,
+          };
+        });
+      return { studentId: st.id, studentName: st.name, admissionNo: st.admissionNo, scores: subjectScores, total, maxTotal };
+    });
+
+  res.json({ examId: exam.id, examName: exam.name, rows });
 });
 
 router.post("/scores", async (req, res): Promise<void> => {

@@ -61,7 +61,7 @@ router.get("/trends/class/:classId", async (req, res): Promise<void> => {
       const marks = areaMarks.get(la.id) ?? [];
       if (marks.length === 0) continue;
       const avg = marks.reduce((s, m) => s + m, 0) / marks.length;
-      const pct = (avg / la.maxMarks) * 100;
+      const pct = la.maxMarks > 0 ? (avg / la.maxMarks) * 100 : 0;
       allPcts.push(pct);
       areaAverages.push({ learningAreaId: la.id, name: la.name, abbreviation: la.abbreviation, average: Math.round(pct * 10) / 10 });
     }
@@ -180,7 +180,7 @@ router.get("/trends/student/:studentId", async (req, res): Promise<void> => {
     for (const la of learningAreas) {
       const marks = scoreMap.get(la.id);
       if (marks === undefined) continue;
-      const pct = (marks / la.maxMarks) * 100;
+      const pct = la.maxMarks > 0 ? (marks / la.maxMarks) * 100 : 0;
       totalMarks += marks;
       totalMaxMarks += la.maxMarks;
       allPcts.push(pct);
