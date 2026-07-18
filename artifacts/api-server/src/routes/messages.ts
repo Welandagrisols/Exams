@@ -248,11 +248,14 @@ router.post("/messages/broadcast-results/:examId", async (req, res): Promise<voi
     const formBody: Record<string, string> = { username: atUsername, to: phone, message: smsText };
     if (atSenderId) formBody.from = atSenderId;
 
+    const atController = new AbortController();
+    const atTimeout = setTimeout(() => atController.abort(), 15_000);
     try {
       const atRes = await fetch(atEndpoint, {
         method: "POST",
         headers: { apiKey: atApiKey, Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(formBody).toString(),
+        signal: atController.signal,
       });
       const data = await atRes.json() as any;
       const rData = data?.SMSMessageData?.Recipients?.[0];
@@ -266,6 +269,8 @@ router.post("/messages/broadcast-results/:examId", async (req, res): Promise<voi
     } catch (err: any) {
       results.failed++;
       results.errors.push(`${recipient.studentName}: ${err.message}`);
+    } finally {
+      clearTimeout(atTimeout);
     }
   }
 
@@ -365,6 +370,8 @@ router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
     };
     if (atSenderId) formBody.from = atSenderId;
 
+    const atController2 = new AbortController();
+    const atTimeout2 = setTimeout(() => atController2.abort(), 15_000);
     try {
       const atRes = await fetch(atEndpoint, {
         method: "POST",
@@ -374,6 +381,7 @@ router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams(formBody).toString(),
+        signal: atController2.signal,
       });
       const data = await atRes.json() as any;
       const rData = data?.SMSMessageData?.Recipients?.[0];
@@ -389,6 +397,8 @@ router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
     } catch (err: any) {
       results.failed++;
       results.errors.push(`${recipient.studentName}: ${err.message}`);
+    } finally {
+      clearTimeout(atTimeout2);
     }
   }
 

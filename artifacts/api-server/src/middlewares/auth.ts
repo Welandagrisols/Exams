@@ -13,12 +13,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const token = authHeader.slice(7);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
         apikey: SUPABASE_ANON_KEY,
       },
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -31,5 +35,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     next();
   } catch {
     res.status(401).json({ error: "Authentication failed" });
+  } finally {
+    clearTimeout(timeout);
   }
 }

@@ -57,6 +57,8 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
     const err = await res.json().catch(() => ({ error: "Request failed" }));
     throw new Error(err.error ?? `HTTP ${res.status}`);
   }
+  // 204 No Content — no body to parse
+  if (res.status === 204) return undefined as unknown as T;
   return res.json();
 }
 

@@ -39,11 +39,15 @@ function AiInsightsCard({ examId }: { examId: number }) {
         buf = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
+          // Parse the SSE payload — skip malformed lines but propagate server errors
+          let payload: { error?: string; content?: string; done?: boolean };
           try {
-            const payload = JSON.parse(line.slice(6));
-            if (payload.error) throw new Error(payload.error);
-            if (payload.content) setText(prev => prev + payload.content);
-          } catch {}
+            payload = JSON.parse(line.slice(6));
+          } catch {
+            continue; // malformed line — skip it
+          }
+          if (payload.error) throw new Error(payload.error); // propagates to outer catch → setError()
+          if (payload.content) setText(prev => prev + payload.content);
         }
       }
     } catch (err: any) {
