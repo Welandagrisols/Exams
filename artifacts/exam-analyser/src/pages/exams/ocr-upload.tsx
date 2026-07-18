@@ -58,7 +58,10 @@ export default function OcrUpload() {
       const form = new FormData();
       form.append("image", file);
       const res = await authFetch(`/api/exams/${examId}/ocr-upload`, { method: "POST", body: form });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        throw new Error(body.error ?? `Server error (${res.status})`);
+      }
       const data: OcrResult = await res.json();
       setResult(data);
       // Init editable marks
@@ -98,7 +101,10 @@ export default function OcrUpload() {
         body: JSON.stringify({ examId, students }),
         headers: { "Content-Type": "application/json" },
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? "Save failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: "Save failed" }));
+        throw new Error(body.error ?? "Save failed");
+      }
       const { saved: count, errors } = await res.json();
       setSaved(true);
       queryClient.invalidateQueries({ queryKey: getGetExamQueryKey(examId) });

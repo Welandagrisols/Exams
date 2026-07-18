@@ -145,19 +145,28 @@ Be direct, specific, and practical. Use simple English suitable for Kenyan teach
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  // Abort the Gemini stream if the client disconnects early
+  let aborted = false;
+  req.on("close", () => { aborted = true; });
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const streamResult = await model.generateContentStream(prompt);
 
     for await (const chunk of streamResult.stream) {
+      if (aborted) break;
       const content = chunk.text();
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
     }
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    if (!aborted) {
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    }
   } catch (err: any) {
-    res.write(`data: ${JSON.stringify({ error: err.message ?? "AI unavailable" })}\n\n`);
+    if (!aborted) {
+      res.write(`data: ${JSON.stringify({ error: err.message ?? "AI unavailable" })}\n\n`);
+    }
   }
 
   res.end();

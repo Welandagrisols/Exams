@@ -76,7 +76,7 @@ Rules:
   const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: base64Image, mimeType } },
@@ -85,6 +85,18 @@ Rules:
     const parsed = JSON.parse(extractJson(result.response.text()));
 
     const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+    // Build a map of subject lookup keys → subject id so we can match even if
+    // Gemini returns a slightly different casing or uses the abbreviation.
+    const subjectByKey = new Map<string, typeof subjects[number]>();
+    for (const sub of subjects) {
+      subjectByKey.set(normalize(sub.name), sub);
+      subjectByKey.set(normalize(sub.abbreviation), sub);
+    }
+    function resolveSubject(key: string): typeof subjects[number] | undefined {
+      return subjectByKey.get(normalize(key));
+    }
+
     const enriched = (parsed.scores ?? []).map((row: any) => {
       // 1. Exact admission number match (most reliable)
       let student = students.find(s => s.admissionNo && row.admissionNo && s.admissionNo === row.admissionNo);
@@ -103,6 +115,19 @@ Rules:
           });
         }
       }
+
+      // Build a marks lookup: iterate the AI's returned marks keys and resolve each
+      // to a subject (by exact name, case-insensitive name, or abbreviation).
+      const resolvedMarks = new Map<number, number | null>();
+      if (row.marks && typeof row.marks === "object") {
+        for (const [key, val] of Object.entries(row.marks)) {
+          const sub = resolveSubject(key);
+          if (sub && !resolvedMarks.has(sub.id)) {
+            resolvedMarks.set(sub.id, typeof val === "number" ? val : null);
+          }
+        }
+      }
+
       return {
         studentId: student?.id ?? null,
         studentName: row.studentName,
@@ -111,7 +136,10 @@ Rules:
           learningAreaId: sub.id,
           subjectName: sub.name,
           maxMarks: sub.maxMarks,
-          marks: row.marks?.[sub.name] ?? null,
+          // Prefer resolved map; fall back to exact key match as last resort
+          marks: resolvedMarks.has(sub.id)
+            ? resolvedMarks.get(sub.id)!
+            : (row.marks?.[sub.name] ?? null),
         })),
       };
     });
@@ -154,7 +182,7 @@ Rules:
   const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: base64Image, mimeType } },
@@ -200,7 +228,7 @@ Rules:
   const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: base64Image, mimeType } },
@@ -286,7 +314,7 @@ Rules:
   const mimeType = req.file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent([
       prompt,
       { inlineData: { data: base64Image, mimeType } },
