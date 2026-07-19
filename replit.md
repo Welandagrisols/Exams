@@ -1,50 +1,49 @@
-# EduMetrics — School Exam Portal
+# EduMetrics — School Exam Management Portal
 
-A pnpm monorepo for a school exam management platform targeting Kenyan CBC teachers. Includes a React web app, an Express API server, and an Expo mobile app.
+A pnpm monorepo for a Kenyan CBC school exam management system. Consists of three main pieces:
 
-## Stack
+## Project structure
 
-- **Frontend** (`artifacts/exam-analyser`): React 18 + Vite + Tailwind CSS + Supabase Auth
-- **API Server** (`artifacts/api-server`): Express 5 + Drizzle ORM + Supabase + Google Gemini AI
-- **Mobile** (`artifacts/mobile-app`): Expo (React Native)
-- **Shared libs** (`lib/`): `api-client-react`, `api-spec`, `api-zod`, `db`
-- **Package manager**: pnpm workspaces
+| Artifact | Path | Description |
+|---|---|---|
+| **JSS Exam Analyser** (web) | `artifacts/exam-analyser/` | React + Vite + Tailwind web app for teachers |
+| **API Server** | `artifacts/api-server/` | Node/Fastify API backend |
+| **Mobile App** | `artifacts/mobile-app/` | Expo (React Native) mobile companion |
+| **Canvas / Mockup Sandbox** | `artifacts/mockup-sandbox/` | Vite-based component preview sandbox |
+
+Shared libraries live under `lib/`. The workspace uses a pnpm catalog (`pnpm-workspace.yaml`) to pin shared dependency versions.
 
 ## How to run
 
-Both services start automatically via the **Project** run button (parallel workflow).
+All workflows start automatically via the **Project** run button. They can also be started individually:
 
-| Service | Port | Workflow name |
-|---------|------|---------------|
-| Exam Analyser (web) | 5000 | `artifacts/exam-analyser: web` |
-| API Server | 8080 | `artifacts/api-server: API Server` |
+| Workflow | Command | Port |
+|---|---|---|
+| API Server | `PORT=8080 NODE_ENV=development pnpm --filter @workspace/api-server run dev` | 8080 |
+| JSS Exam Analyser (web) | `PORT=5000 BASE_PATH=/ pnpm --filter @workspace/exam-analyser run dev` | 5000 (proxied by artifact system to 21653) |
+| Mobile App | `cd artifacts/mobile-app && node_modules/.bin/expo start --port 8082` | 8082 |
+| Mockup Sandbox | `PORT=3000 pnpm --filter @workspace/mockup-sandbox run dev` | 3000 |
 
 The web app proxies `/api/*` requests to the API server on port 8080.
 
-## Required secrets
+## Required secrets / environment variables
 
-Set these in Replit Secrets:
+| Variable | Used by | Notes |
+|---|---|---|
+| `SUPABASE_URL` | Web app, API server, mobile | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Web app, API server, mobile | Supabase anonymous key |
+| `GEMINI_API_KEY` | API server | Google Gemini for AI features |
+| `EXPO_TOKEN` | Mobile app | EAS Build token |
+| `SESSION_SECRET` | API server | Express/Fastify session signing |
 
-| Secret | Description |
-|--------|-------------|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_DB_URL` | Direct PostgreSQL connection string |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `SESSION_SECRET` | Express session secret |
+## Installing dependencies
 
-Optional (Africa's Talking SMS):
-- `AT_API_KEY`, `AT_USERNAME`, `AT_SENDER_ID`
+From the workspace root:
 
-## Environment variables (userenv.shared)
-
-- `PORT=8080` (API server port, also sets fallback for vite config)
-- `BASE_PATH=/`
-- `API_SERVER_PORT=8080`
-- `EXPO_PUBLIC_API_URL` — API base URL for the mobile app
-- `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+```bash
+CI=true pnpm install --no-frozen-lockfile
+```
 
 ## User preferences
 
-- Use Supabase for auth and database
-- Use Gemini API for AI features
+- Use pnpm (never npm/yarn) — enforced by `preinstall` script.
