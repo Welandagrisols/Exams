@@ -39,7 +39,9 @@
     "react-native-keyboard-controller": "^1.16.6",
     "react-native-reanimated": "~3.17.5",
     "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.11.1"
+    "react-native-screens": "~4.11.1",
+    "expo-document-picker": "~13.1.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",

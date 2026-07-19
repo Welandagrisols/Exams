@@ -157,11 +157,15 @@ export default function StudentsScreen() {
             <View style={styles.addBar}>
               <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-add`)}>
                 <Ionicons name="camera" size={15} color="#fff" />
-                <Text style={styles.addBtnText}>Scan Registration Form</Text>
+                <Text style={styles.addBtnText}>Scan Form</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-bulk-scan`)}>
                 <Ionicons name="list" size={15} color="#fff" />
                 <Text style={styles.addBtnText}>Scan Class List</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-excel`)}>
+                <Ionicons name="document" size={15} color="#fff" />
+                <Text style={styles.addBtnText}>Import Excel</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -179,7 +183,11 @@ export default function StudentsScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <View style={styles.item}>
+        <TouchableOpacity
+          style={styles.item}
+          onPress={() => canWrite && router.push(`/classes/${classId}/student-edit?studentId=${item.id}`)}
+          activeOpacity={canWrite ? 0.7 : 1}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{(item.name?.trim().charAt(0) ?? "?").toUpperCase()}</Text>
           </View>
@@ -193,7 +201,8 @@ export default function StudentsScreen() {
               <Text style={styles.genderText}>{item.gender === "M" ? "M" : "F"}</Text>
             </View>
           )}
-        </View>
+          {canWrite && <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} style={{ marginLeft: 6 }} />}
+        </TouchableOpacity>
       )}
     />
   );

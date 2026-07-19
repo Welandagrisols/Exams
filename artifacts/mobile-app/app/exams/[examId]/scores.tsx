@@ -1,11 +1,14 @@
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
-  RefreshControl, useColorScheme,
+  RefreshControl, useColorScheme, TouchableOpacity,
 } from "react-native";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, getRubricColor } from "@/lib/api";
 import palette from "@/constants/colors";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type ScoreRow = {
   studentId: number;
@@ -25,7 +28,12 @@ type ScoreData = {
 export default function ScoresScreen() {
   const scheme = useColorScheme();
   const colors = scheme === "dark" ? palette.dark : palette.light;
+  const router = useRouter();
   const { examId } = useLocalSearchParams<{ examId: string }>();
+  // classId is not in this route's params, but we need it for usePermissions.
+  // We derive it lazily from the scores data once loaded.
+  const [classIdForPerms, setClassIdForPerms] = useState<string | undefined>(undefined);
+  const { canWrite } = usePermissions(classIdForPerms);
 
   const { data, isLoading, refetch, isRefetching } = useQuery<ScoreData>({
     queryKey: ["/scores", examId],
@@ -179,6 +187,14 @@ export default function ScoresScreen() {
             <View style={styles.totalBadge}>
               <Text style={styles.totalText}>{row.total}/{row.maxTotal}</Text>
             </View>
+            {canWrite && (
+              <TouchableOpacity
+                onPress={() => router.push(`/exams/${examId}/score-edit?studentId=${row.studentId}`)}
+                style={{ marginLeft: 8 }}
+              >
+                <Ionicons name="pencil" size={15} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            )}
           </View>
           {row.scores.map((score) => {
             const grade = score.marks !== null ? getGrade(score.marks, score.maxMarks) : null;
