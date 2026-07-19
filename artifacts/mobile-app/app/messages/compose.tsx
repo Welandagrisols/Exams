@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import palette from "@/constants/colors";
 import * as Haptics from "expo-haptics";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Class = { id: number; name: string };
 
@@ -16,6 +17,7 @@ export default function ComposeScreen() {
   const scheme = useColorScheme();
   const colors = scheme === "dark" ? palette.dark : palette.light;
   const router = useRouter();
+  const { canWrite } = usePermissions(classId);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("Dear Parent/Guardian,\n\n[Student Name] results:\n\nRegards,\nSchool Administration");
@@ -156,12 +158,14 @@ export default function ComposeScreen() {
       />
       <Text style={styles.hint}>Use [Student Name] to personalise per student.</Text>
 
-      <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={sending} activeOpacity={0.8}>
-        {sending
-          ? <ActivityIndicator color="#fff" />
-          : <><Ionicons name="save-outline" size={18} color="#fff" /><Text style={styles.sendBtnText}>Save & Continue</Text></>
-        }
-      </TouchableOpacity>
+      {canWrite && (
+        <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={sending} activeOpacity={0.8}>
+          {sending
+            ? <ActivityIndicator color="#fff" />
+            : <><Ionicons name="save-outline" size={18} color="#fff" /><Text style={styles.sendBtnText}>Save & Continue</Text></>
+          }
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }

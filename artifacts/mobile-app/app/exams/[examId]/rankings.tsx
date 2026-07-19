@@ -9,6 +9,7 @@ import { apiFetch, getRubricColor } from "@/lib/api";
 import palette from "@/constants/colors";
 import * as Haptics from "expo-haptics";
 import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type RankRow = {
   rank: number;
@@ -43,6 +44,14 @@ export default function RankingsScreen() {
     queryFn: () => apiFetch(`/rankings/${examId}`),
     enabled: !!examId,
   });
+
+  // Fetch exam to get classId for permission check (usually already cached from exams screen)
+  const { data: examData } = useQuery<{ id: number; classId: number | null }>({
+    queryKey: ["/exams", examId],
+    queryFn: () => apiFetch(`/exams/${examId}`),
+    enabled: !!examId,
+  });
+  const { canWrite } = usePermissions(examData?.classId);
 
   const broadcast = useMutation<BroadcastResult, Error>({
     mutationFn: () => apiFetch(`/messages/broadcast-results/${examId}`, { method: "POST" }),
@@ -253,7 +262,7 @@ export default function RankingsScreen() {
               <Text style={styles.sendBarLabel}>
                 {data.length} student{data.length !== 1 ? "s" : ""}
               </Text>
-              <TouchableOpacity
+              {canWrite && <TouchableOpacity
                 style={styles.sendBtn}
                 onPress={handleSend}
                 disabled={broadcast.isPending}

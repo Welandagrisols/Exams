@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db, scoresTable, learningAreasTable, examsTable, studentsTable } from "@workspace/db";
 import { ListScoresQueryParams, ListScoresResponse, UpsertScoresBody, UpsertScoresResponse } from "@workspace/api-zod";
 import { getRubricGrade, getRubricPoints } from "../lib/rubric";
+import { canEditClass, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 
@@ -122,6 +123,12 @@ router.post("/scores", async (req, res): Promise<void> => {
   }
   const { studentId, examId, scores } = parsed.data;
 
+  // RBAC: class teacher or staff only
+  const [_examR] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, examId));
+  if (!_examR || !canEditClass(_examR.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can enter scores for this exam."); return;
+  }
+
   const upserted = await db.transaction(async (tx) => {
     const rows = [];
     for (const entry of scores) {
@@ -179,6 +186,12 @@ router.post("/scores/bulk", async (req, res): Promise<void> => {
   if (isNaN(parsedExamId)) {
     res.status(400).json({ error: "examId must be a number" });
     return;
+  }
+
+  // RBAC: class teacher or staff only
+  const [_bulkExamR] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, parsedExamId));
+  if (!_bulkExamR || !canEditClass(_bulkExamR.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can bulk-upload scores for this exam."); return;
   }
 
   const areaMap = new Map(

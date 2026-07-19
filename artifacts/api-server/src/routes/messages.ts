@@ -4,6 +4,7 @@ import {
   db, messagesTable, messageRecipientsTable, studentsTable,
   classesTable, examsTable, scoresTable, learningAreasTable,
 } from "@workspace/db";
+import { canEditClass, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 
@@ -72,6 +73,10 @@ router.get("/messages/:id", async (req, res): Promise<void> => {
 router.post("/messages", async (req, res): Promise<void> => {
   const { type = "general", title, body, classId, examId, studentIds, feeData } = req.body;
   if (!title || !body) { res.status(400).json({ error: "title and body are required" }); return; }
+  // RBAC: only class teacher or staff can send messages
+  if (classId != null && !canEditClass(parseInt(classId), res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can send messages for this class."); return;
+  }
 
   let recipientRows: Array<{
     studentId: number; studentName: string; parentName: string | null;
@@ -163,6 +168,11 @@ router.post("/messages/broadcast-results/:examId", async (req, res): Promise<voi
     .from(examsTable)
     .where(eq(examsTable.id, examId));
   if (!exam) { res.status(404).json({ error: "Exam not found" }); return; }
+
+  // RBAC: only class teacher or staff can broadcast results
+  if (!canEditClass(exam.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can broadcast results for this exam."); return;
+  }
 
   // Load all students in the class
   const students = await db
@@ -294,6 +304,11 @@ router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
     .from(messagesTable)
     .where(eq(messagesTable.id, id));
   if (!message) { res.status(404).json({ error: "Message not found" }); return; }
+
+  // RBAC: only class teacher or staff can send SMS
+  if (message.classId != null && !canEditClass(message.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can send SMS for this class."); return;
+  }
 
   const allRecipients = await db
     .select()

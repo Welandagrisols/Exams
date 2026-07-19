@@ -8,6 +8,8 @@ export const classesTable = pgTable("classes", {
   year: integer("year").notNull(),
   term: integer("term").notNull().default(1),
   classTeacherName: text("class_teacher_name"),
+  /** UUID of the user (teacher) assigned to this class — gates write access */
+  teacherId: text("teacher_id"),
 });
 
 export const insertClassSchema = createInsertSchema(classesTable).omit({ id: true });

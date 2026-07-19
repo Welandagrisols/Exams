@@ -3,6 +3,7 @@ import multer from "multer";
 import { eq } from "drizzle-orm";
 import { db, examsTable, classesTable, studentsTable, learningAreasTable } from "@workspace/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { canEditClass, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -31,6 +32,11 @@ router.post("/exams/:examId/ocr-upload", upload.single("image"), async (req, res
   if (!exam) {
     res.status(404).json({ error: "Exam not found" });
     return;
+  }
+
+  // RBAC: only class teacher or staff can upload OCR scores
+  if (!canEditClass(exam.classId!, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can upload scores via OCR for this exam."); return;
   }
 
   const students = await db

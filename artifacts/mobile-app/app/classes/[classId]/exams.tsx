@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import palette from "@/constants/colors";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Exam = {
   id: number;
@@ -29,6 +30,7 @@ export default function ClassExamsScreen() {
   const colors = scheme === "dark" ? palette.dark : palette.light;
   const { classId } = useLocalSearchParams<{ classId: string }>();
   const router = useRouter();
+  const { canWrite } = usePermissions(classId);
 
   const { data, isLoading, refetch, isRefetching } = useQuery<Exam[]>({
     queryKey: ["/classes", classId, "exams"],
@@ -79,9 +81,11 @@ export default function ClassExamsScreen() {
       borderTopWidth: 1,
       borderTopColor: colors.border,
       paddingTop: 10,
+      flexWrap: "wrap",
     },
     actionBtn: {
       flex: 1,
+      minWidth: 70,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -141,18 +145,29 @@ export default function ClassExamsScreen() {
           </View>
           <Text style={styles.sub}>Term {item.term}, {item.year}</Text>
           <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/scores`)}>
-              <Ionicons name="create-outline" size={15} color={colors.foreground} />
-              <Text style={styles.actionText}>Scores</Text>
+            {/* Analytics — visible to all teachers */}
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary + "18" }]} onPress={() => router.push(`/exams/${item.id}/analytics`)}>
+              <Ionicons name="bar-chart-outline" size={15} color={colors.primary} />
+              <Text style={[styles.actionText, { color: colors.primary }]}>Analytics</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/ocr-upload`)}>
-              <Ionicons name="camera-outline" size={15} color={colors.foreground} />
-              <Text style={styles.actionText}>Scan</Text>
-            </TouchableOpacity>
+            {/* Rankings — visible to all teachers */}
             <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/rankings`)}>
               <Ionicons name="trophy-outline" size={15} color={colors.foreground} />
               <Text style={styles.actionText}>Rankings</Text>
             </TouchableOpacity>
+            {/* Scores & Scan — class teacher only */}
+            {canWrite && (
+              <>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/scores`)}>
+                  <Ionicons name="create-outline" size={15} color={colors.foreground} />
+                  <Text style={styles.actionText}>Scores</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/exams/${item.id}/ocr-upload`)}>
+                  <Ionicons name="camera-outline" size={15} color={colors.foreground} />
+                  <Text style={styles.actionText}>Scan</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       )}

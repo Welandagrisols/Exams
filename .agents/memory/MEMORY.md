@@ -1,3 +1,4 @@
+- [RBAC and Analytics Build](rbac-analytics-build.md) — full route protection, role/assignedClassIds in auth middleware, mobile analytics screens, usePermissions hook, assign-teacher endpoint.
 - [Digital Signature Feature](signature-feature.md) — per-user signatures in users table; per-report in report_comments; SignaturePad draws blue ink on canvas; report page uses direct authFetch not generated client.
 - [Expo keep-awake stale watcher](expo-keepawake-watcher.md) — after package upgrades, _tmp_N/build path goes missing; mkdir the stub to fix.
 - [Expo port constraints](expo-port.md) — Replit proxy only supports specific ports; 8081 is unavailable; use 8082 for Expo Metro.

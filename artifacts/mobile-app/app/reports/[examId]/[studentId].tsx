@@ -6,7 +6,7 @@ import {
 import { useState, useEffect } from "react";
 import Svg, { Line, Polyline, Circle, Text as SvgText, G } from "react-native-svg";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, getRubricColor } from "@/lib/api";
 import palette from "@/constants/colors";
@@ -352,6 +352,7 @@ export default function ReportScreen() {
   // content padding 16*2, card padding 12*2, card border 1*2
   const cardWidth = screenWidth - 32 - 24 - 2;
   const { examId, studentId } = useLocalSearchParams<{ examId: string; studentId: string }>();
+  const router = useRouter();
 
   const { data, isLoading, isError } = useQuery<Report>({
     queryKey: ["/reports", examId, studentId],
@@ -693,6 +694,16 @@ export default function ReportScreen() {
       <TouchableOpacity style={styles.shareBtn} onPress={handleSharePdf} activeOpacity={0.8}>
         <Ionicons name="document-outline" size={20} color="#fff" />
         <Text style={styles.shareBtnText}>Share Report as PDF</Text>
+      </TouchableOpacity>
+
+      {/* Student Trends */}
+      <TouchableOpacity
+        style={[styles.shareBtn, { backgroundColor: "#7c3aed" }]}
+        onPress={() => router.push(`/students/${studentId}/trends`)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="trending-up-outline" size={20} color="#fff" />
+        <Text style={styles.shareBtnText}>View Student Trends</Text>
       </TouchableOpacity>
 
     </ScrollView>

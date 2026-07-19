@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, gte } from "drizzle-orm";
 import multer from "multer";
 import { db, studentsTable, classesTable } from "@workspace/db";
+import { canEditClass, isStaff, forbidden, type AppLocals } from "../middlewares/rbac";
 import {
   ListStudentsQueryParams,
   CreateStudentBody,
@@ -53,6 +54,10 @@ router.post("/students", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // RBAC: class teacher or staff only
+  if (!canEditClass(parsed.data.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can add students to this class."); return;
+  }
   const [student] = await db.insert(studentsTable).values(parsed.data).returning();
   const [row] = await db
     .select(STUDENT_SELECT)
@@ -63,10 +68,17 @@ router.post("/students", async (req, res): Promise<void> => {
 });
 
 router.post("/students/fee-balances/bulk", async (req, res): Promise<void> => {
-  const { updates } = req.body;
+  const { updates, classId } = req.body;
   if (!Array.isArray(updates) || updates.length === 0) {
     res.status(400).json({ error: "updates array is required" });
     return;
+  }
+  // RBAC: class teacher (classId required) or staff
+  if (classId != null && !canEditClass(parseInt(classId), res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can update fee balances for this class."); return;
+  }
+  if (classId == null && !isStaff(res.locals as AppLocals)) {
+    forbidden(res, "Provide classId or use a staff account to update fee balances."); return;
   }
 
   let updated = 0;
@@ -151,6 +163,11 @@ router.patch("/students/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // RBAC: fetch student's class, then check
+  const [_studForRbac] = await db.select({ classId: studentsTable.classId }).from(studentsTable).where(eq(studentsTable.id, params.data.id));
+  if (!_studForRbac || !canEditClass(_studForRbac.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can edit students in this class."); return;
+  }
   const [updated] = await db.update(studentsTable).set(parsed.data).where(eq(studentsTable.id, params.data.id)).returning();
   if (!updated) {
     res.status(404).json({ error: "Student not found" });
@@ -169,6 +186,11 @@ router.delete("/students/:id", async (req, res): Promise<void> => {
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
+  }
+  // RBAC: fetch student's class, then check
+  const [_studDel] = await db.select({ classId: studentsTable.classId }).from(studentsTable).where(eq(studentsTable.id, params.data.id));
+  if (!_studDel || !canEditClass(_studDel.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can remove students from this class."); return;
   }
   const [deleted] = await db.delete(studentsTable).where(eq(studentsTable.id, params.data.id)).returning();
   if (!deleted) {

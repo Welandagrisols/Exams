@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import palette from "@/constants/colors";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type Student = {
   id: number;
@@ -22,6 +23,7 @@ export default function StudentsScreen() {
   const colors = scheme === "dark" ? palette.dark : palette.light;
   const router = useRouter();
   const { classId } = useLocalSearchParams<{ classId: string }>();
+  const { canWrite } = usePermissions(classId);
 
   const { data, isLoading, refetch, isRefetching } = useQuery<Student[]>({
     queryKey: ["/students", classId],
@@ -151,16 +153,18 @@ export default function StudentsScreen() {
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       ListHeaderComponent={
         <View>
-          <View style={styles.addBar}>
-            <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-add`)}>
-              <Ionicons name="camera" size={15} color="#fff" />
-              <Text style={styles.addBtnText}>Scan Registration Form</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-bulk-scan`)}>
-              <Ionicons name="list" size={15} color="#fff" />
-              <Text style={styles.addBtnText}>Scan Class List</Text>
-            </TouchableOpacity>
-          </View>
+          {canWrite && (
+            <View style={styles.addBar}>
+              <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-add`)}>
+                <Ionicons name="camera" size={15} color="#fff" />
+                <Text style={styles.addBtnText}>Scan Registration Form</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addBtn} onPress={() => router.push(`/classes/${classId}/students-bulk-scan`)}>
+                <Ionicons name="list" size={15} color="#fff" />
+                <Text style={styles.addBtnText}>Scan Class List</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {data?.length ? (
             <View style={styles.countBar}>
               <Text style={styles.countText}>{data.length} student{data.length !== 1 ? "s" : ""}</Text>

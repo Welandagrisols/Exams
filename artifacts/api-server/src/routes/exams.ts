@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db, examsTable, classesTable } from "@workspace/db";
+import { canEditClass, isStaff, forbidden, type AppLocals } from "../middlewares/rbac";
 import {
   ListExamsQueryParams,
   ListExamsResponse,
@@ -66,6 +67,10 @@ router.post("/exams", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // RBAC: class teacher or staff only
+  if (!canEditClass(parsed.data.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can create exams for this class."); return;
+  }
   const [exam] = await db.insert(examsTable).values(parsed.data).returning();
   const row = await examWithClass(exam.id);
   res.status(201).json(GetExamResponse.parse(row));
@@ -96,6 +101,11 @@ router.patch("/exams/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // RBAC: class teacher or staff only
+  const [_patchExam] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, params.data.id));
+  if (!_patchExam || !canEditClass(_patchExam.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can edit this exam."); return;
+  }
   const [updated] = await db.update(examsTable).set(parsed.data).where(eq(examsTable.id, params.data.id)).returning();
   if (!updated) {
     res.status(404).json({ error: "Exam not found" });
@@ -110,6 +120,11 @@ router.delete("/exams/:id", async (req, res): Promise<void> => {
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
+  }
+  // RBAC: class teacher or staff only
+  const [_delExam] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, params.data.id));
+  if (!_delExam || !canEditClass(_delExam.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can delete this exam."); return;
   }
   const [deleted] = await db.delete(examsTable).where(eq(examsTable.id, params.data.id)).returning();
   if (!deleted) {
@@ -135,7 +150,12 @@ router.post("/exams/bulk", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // Bulk create touches multiple classes — require staff or verify all classes belong to the caller
   const { classIds, ...examBase } = parsed.data;
+  const allAllowed = (classIds as number[]).every(cId => canEditClass(cId, res.locals as AppLocals));
+  if (!allAllowed) {
+    forbidden(res, "You can only bulk-create exams for classes you are assigned to."); return;
+  }
 
   const rows = await db
     .insert(examsTable)

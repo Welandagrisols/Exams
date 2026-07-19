@@ -53,7 +53,7 @@ export default function ClassesScreen() {
       color: colors.mutedForeground,
       marginTop: 1,
     },
-    actions: { flexDirection: "row", gap: 8, marginLeft: "auto" },
+    actions: { flexDirection: "row", gap: 4, marginLeft: "auto" },
     actionBtn: {
       padding: 6,
     },
@@ -103,6 +103,10 @@ export default function ClassesScreen() {
             {item.stream && <Text style={styles.sub}>{item.stream}</Text>}
           </View>
           <View style={styles.actions}>
+            {/* Trends — all teachers can view */}
+            <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/classes/${item.id}/trends`)}>
+              <Ionicons name="trending-up-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/classes/${item.id}/students`)}>
               <Ionicons name="people-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
