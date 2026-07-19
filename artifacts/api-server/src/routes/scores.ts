@@ -13,6 +13,13 @@ router.get("/scores", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
+
+  // RBAC: verify the requesting user has access to this exam's class
+  const [_examRbac] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, query.data.examId));
+  if (!_examRbac || !canEditClass(_examRbac.classId, res.locals as AppLocals)) {
+    forbidden(res, "You do not have access to this exam."); return;
+  }
+
   const conditions = [eq(scoresTable.examId, query.data.examId)];
   if (query.data.studentId != null) {
     conditions.push(eq(scoresTable.studentId, query.data.studentId));
@@ -57,6 +64,9 @@ router.get("/scores/:examId", async (req, res): Promise<void> => {
     .from(examsTable)
     .where(eq(examsTable.id, examId));
   if (!exam) { res.status(404).json({ error: "Exam not found" }); return; }
+  if (!canEditClass(exam.classId, res.locals as AppLocals)) {
+    forbidden(res, "You do not have access to this exam."); return;
+  }
 
   const [students, scoreRows, areas] = await Promise.all([
     db.select({ id: studentsTable.id, name: studentsTable.name, admissionNo: studentsTable.admissionNo })

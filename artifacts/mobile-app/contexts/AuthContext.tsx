@@ -43,11 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Supabase fires onAuthStateChange with INITIAL_SESSION immediately on
+    // subscribe, so we do NOT call fetchProfile here — doing so would trigger
+    // two concurrent profile fetches on every app start (a race condition).
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session) fetchProfile();
     }).catch(() => {
       setLoading(false);
     });

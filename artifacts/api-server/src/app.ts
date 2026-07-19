@@ -57,7 +57,10 @@ if (process.env.NODE_ENV === "production") {
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled route error");
   if (!res.headersSent) {
-    res.status(500).json({ error: err.message ?? "Internal server error" });
+    // In production, never expose raw error messages to clients — they may
+    // contain database schema details or stack traces.
+    const isDev = process.env.NODE_ENV !== "production";
+    res.status(500).json({ error: isDev ? (err.message ?? "Internal server error") : "Internal server error" });
   }
 });
 

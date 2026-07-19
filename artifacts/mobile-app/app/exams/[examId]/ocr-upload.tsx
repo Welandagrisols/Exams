@@ -161,8 +161,11 @@ export default function OcrUploadScreen() {
       setResult(data);
       const init: Record<string, string> = {};
       data.scores.forEach((row) => {
+        // Use admissionNo as the key fallback so multiple unmatched rows never
+        // share the same state slot (studentId is null for all of them).
+        const rowKey = row.studentId != null ? String(row.studentId) : `adm-${row.admissionNo || row.studentName}`;
         row.marks.forEach((m) => {
-          init[`${row.studentId}-${m.learningAreaId}`] = m.marks != null ? String(m.marks) : "";
+          init[`${rowKey}-${m.learningAreaId}`] = m.marks != null ? String(m.marks) : "";
         });
       });
       setEditedMarks(init);
@@ -287,13 +290,14 @@ export default function OcrUploadScreen() {
           </View>
 
           {result.scores.map((row) => (
-            <View key={row.studentId ?? row.studentName} style={styles.studentCard}>
+            <View key={row.admissionNo || row.studentName} style={styles.studentCard}>
               <View style={styles.studentHeader}>
                 <Text style={styles.studentName} numberOfLines={1}>{row.studentName}</Text>
                 {!row.studentId && <Text style={styles.unmatched}>Not matched</Text>}
               </View>
               {row.marks.map((m) => {
-                const key = `${row.studentId}-${m.learningAreaId}`;
+                const rowKey = row.studentId != null ? String(row.studentId) : `adm-${row.admissionNo || row.studentName}`;
+                const key = `${rowKey}-${m.learningAreaId}`;
                 return (
                   <View key={m.learningAreaId} style={styles.markRow}>
                     <Text style={styles.markLabel} numberOfLines={1}>{m.subjectName} (/{m.maxMarks})</Text>

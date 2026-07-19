@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable, classesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? "";
@@ -45,8 +46,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       ]);
       role = userRow?.role ?? "teacher";
       assignedClassIds = assignedClasses.map(c => c.id);
-    } catch {
-      // DB schema not yet migrated — default to most-restrictive role
+    } catch (dbErr) {
+      // DB schema not yet migrated or connection error — default to most-restrictive role
+      logger.warn({ err: dbErr }, "Could not fetch user role from DB — defaulting to teacher");
     }
 
     res.locals.user = { id: userId, email: supabaseUser.email };

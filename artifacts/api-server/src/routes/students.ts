@@ -81,11 +81,24 @@ router.post("/students/fee-balances/bulk", async (req, res): Promise<void> => {
     forbidden(res, "Provide classId or use a staff account to update fee balances."); return;
   }
 
+  // When classId is provided, pre-fetch the set of student IDs that actually
+  // belong to that class so we can reject cross-class writes in the loop below.
+  let allowedStudentIds: Set<number> | null = null;
+  if (classId != null) {
+    const classStudents = await db
+      .select({ id: studentsTable.id })
+      .from(studentsTable)
+      .where(eq(studentsTable.classId, parseInt(classId)));
+    allowedStudentIds = new Set(classStudents.map((s) => s.id));
+  }
+
   let updated = 0;
   for (const entry of updates) {
     const studentId = parseInt(entry?.studentId);
     const feeBalance = entry?.feeBalance;
     if (isNaN(studentId) || feeBalance == null || isNaN(parseFloat(feeBalance))) continue;
+    // Silently skip any student that doesn't belong to the authorised class
+    if (allowedStudentIds && !allowedStudentIds.has(studentId)) continue;
 
     const [row] = await db
       .update(studentsTable)
