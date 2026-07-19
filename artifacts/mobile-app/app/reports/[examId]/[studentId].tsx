@@ -1,8 +1,10 @@
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   useColorScheme, TouchableOpacity, Alert, TextInput, Image,
+  useWindowDimensions,
 } from "react-native";
 import { useState, useEffect } from "react";
+import Svg, { Line, Polyline, Circle, Text as SvgText, G } from "react-native-svg";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,6 +52,96 @@ type TrendExam = {
 
 type TrendData = { student: { name: string }; exams: TrendExam[] };
 
+// ─── Trend line chart ────────────────────────────────────────────────────────
+function TrendLineChart({
+  rows,
+  currentExamId,
+  colors,
+  cardWidth,
+}: {
+  rows: TrendExam[];
+  currentExamId: number;
+  colors: typeof palette.light;
+  cardWidth: number;
+}) {
+  const W = cardWidth;
+  const H = 200;
+  const PL = 40; // left for Y labels
+  const PR = 12;
+  const PT = 14;
+  const PB = 30; // bottom for X labels
+  const cW = W - PL - PR;
+  const cH = H - PT - PB;
+  const n = rows.length;
+
+  const xAt = (i: number) => PL + (n <= 1 ? cW / 2 : (i / (n - 1)) * cW);
+  const yAt = (pct: number) => PT + (1 - pct / 100) * cH;
+
+  const studentPts = rows.map((r, i) => `${xAt(i)},${yAt(r.averagePercentage)}`).join(" ");
+  const classPtsList: string[] = [];
+  rows.forEach((r, i) => {
+    if (r.classAverage != null) classPtsList.push(`${xAt(i)},${yAt(r.classAverage)}`);
+  });
+  const classPts = classPtsList.join(" ");
+  const yGrids = [0, 25, 50, 75, 100];
+
+  return (
+    <Svg width={W} height={H}>
+      {/* Y grid lines + labels */}
+      {yGrids.map(v => (
+        <G key={v}>
+          <Line
+            x1={PL} y1={yAt(v)} x2={PL + cW} y2={yAt(v)}
+            stroke={colors.border} strokeWidth={1}
+          />
+          <SvgText
+            x={PL - 5} y={yAt(v) + 4}
+            fontSize={9} fill={colors.mutedForeground} textAnchor="end"
+          >{v}%</SvgText>
+        </G>
+      ))}
+
+      {/* X axis baseline */}
+      <Line x1={PL} y1={PT + cH} x2={PL + cW} y2={PT + cH} stroke={colors.border} strokeWidth={1} />
+
+      {/* Class average line — dashed amber */}
+      {classPtsList.length >= 2 && (
+        <Polyline points={classPts} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" />
+      )}
+
+      {/* Student line */}
+      <Polyline points={studentPts} fill="none" stroke={colors.primary} strokeWidth={2.5} />
+
+      {/* Dots — class avg drawn first so student dots sit on top */}
+      {rows.map((r, i) => r.classAverage != null ? (
+        <Circle key={`ca-${r.examId}`}
+          cx={xAt(i)} cy={yAt(r.classAverage)}
+          r={3.5} fill="#f59e0b" stroke={colors.card} strokeWidth={1.5}
+        />
+      ) : null)}
+      {rows.map((r, i) => {
+        const isCurrent = r.examId === currentExamId;
+        return (
+          <Circle key={`st-${r.examId}`}
+            cx={xAt(i)} cy={yAt(r.averagePercentage)}
+            r={isCurrent ? 7 : 4}
+            fill={isCurrent ? colors.primary : colors.card}
+            stroke={colors.primary}
+            strokeWidth={isCurrent ? 0 : 2}
+          />
+        );
+      })}
+
+      {/* X labels */}
+      {rows.map((r, i) => (
+        <SvgText key={r.examId} x={xAt(i)} y={H - 6} fontSize={9} fill={colors.mutedForeground} textAnchor="middle">
+          {`T${r.term} '${String(r.year).slice(2)}`}
+        </SvgText>
+      ))}
+    </Svg>
+  );
+}
+
 // ─── Rubric helpers (mirrored from web) ────────────────────────────────────
 function rubricHex(grade: string): string {
   if (grade.startsWith("EE")) return "#166534";
@@ -86,26 +178,67 @@ function buildReportHtml(
       </td>
     </tr>`).join("");
 
+  // Build an inline SVG trend chart for the PDF
+  const buildTrendSvg = (): string => {
+    const W = 636, H = 160;
+    const PL = 44, PR = 14, PT = 12, PB = 28;
+    const cW = W - PL - PR, cH = H - PT - PB;
+    const n = trendRows.length;
+    const xAt = (i: number) => (PL + (n <= 1 ? cW / 2 : (i / (n - 1)) * cW)).toFixed(1);
+    const yAt = (pct: number) => (PT + (1 - pct / 100) * cH).toFixed(1);
+
+    const studentPts = trendRows.map((r, i) => `${xAt(i)},${yAt(r.averagePercentage)}`).join(" ");
+    const classPts = trendRows.filter(r => r.classAverage != null).map((r, i) => {
+      const idx = trendRows.indexOf(r);
+      return `${xAt(idx)},${yAt(r.classAverage!)}`;
+    }).join(" ");
+
+    const gridLines = [0, 25, 50, 75, 100].map(v =>
+      `<line x1="${PL}" y1="${yAt(v)}" x2="${PL + cW}" y2="${yAt(v)}" stroke="#e2e8f0" stroke-width="1"/>
+       <text x="${PL - 5}" y="${(parseFloat(yAt(v)) + 4).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="end">${v}%</text>`
+    ).join("");
+
+    const xLabels = trendRows.map((r, i) =>
+      `<text x="${xAt(i)}" y="${H - 5}" font-size="9" fill="#64748b" text-anchor="middle">T${r.term} '${String(r.year).slice(2)}</text>`
+    ).join("");
+
+    const classDots = trendRows.map((r, i) => r.classAverage != null
+      ? `<circle cx="${xAt(i)}" cy="${yAt(r.classAverage)}" r="3.5" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>`
+      : ""
+    ).join("");
+
+    const studentDots = trendRows.map((r, i) => {
+      const isCurrent = r.examId === currentExamId;
+      return `<circle cx="${xAt(i)}" cy="${yAt(r.averagePercentage)}" r="${isCurrent ? 6 : 4}" fill="${isCurrent ? "#2563eb" : "#fff"}" stroke="#2563eb" stroke-width="2"/>`;
+    }).join("");
+
+    const classLine = classPts
+      ? `<polyline points="${classPts}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 3"/>`
+      : "";
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="font-family:-apple-system,sans-serif;overflow:visible">
+      ${gridLines}
+      <line x1="${PL}" y1="${(PT + cH).toFixed(1)}" x2="${PL + cW}" y2="${(PT + cH).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+      ${classLine}
+      <polyline points="${studentPts}" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+      ${classDots}
+      ${studentDots}
+      ${xLabels}
+    </svg>`;
+  };
+
   const trendSection = hasTrend ? `
     <div style="padding:20px 32px 16px;border-top:1px solid #e2e8f0">
-      <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Performance Trajectory</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead>
-          <tr style="background:#f1f5f9">
-            <th style="border:1px solid #e2e8f0;padding:6px 10px;text-align:left;color:#64748b;font-size:10px;text-transform:uppercase">Term</th>
-            <th style="border:1px solid #e2e8f0;padding:6px 10px;text-align:center;color:#64748b;font-size:10px;text-transform:uppercase">Student %</th>
-            <th style="border:1px solid #e2e8f0;padding:6px 10px;text-align:center;color:#64748b;font-size:10px;text-transform:uppercase">Class Avg %</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${trendRows.map(e => `
-            <tr style="${e.examId === currentExamId ? "background:#f0f9ff;" : ""}">
-              <td style="border:1px solid #e2e8f0;padding:6px 10px;font-weight:${e.examId === currentExamId ? "700" : "500"}">T${e.term} ${e.year}${e.examId === currentExamId ? " ◀" : ""}</td>
-              <td style="border:1px solid #e2e8f0;padding:6px 10px;text-align:center;font-family:monospace;font-weight:600">${e.averagePercentage.toFixed(1)}%</td>
-              <td style="border:1px solid #e2e8f0;padding:6px 10px;text-align:center;font-family:monospace;color:#64748b">${e.classAverage != null ? `${e.classAverage.toFixed(1)}%` : "—"}</td>
-            </tr>`).join("")}
-        </tbody>
-      </table>
+      <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Performance Trajectory</div>
+      ${buildTrendSvg()}
+      <div style="display:flex;gap:20px;margin-top:8px;font-size:10px;color:#64748b;align-items:center">
+        <span style="display:inline-flex;align-items:center;gap:5px">
+          <span style="display:inline-block;width:20px;height:2.5px;background:#2563eb;border-radius:2px"></span> Student
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px">
+          <span style="display:inline-block;width:20px;height:0;border-top:2px dashed #f59e0b"></span> Class Average
+        </span>
+      </div>
     </div>` : "";
 
   return `<!DOCTYPE html>
@@ -215,6 +348,9 @@ function buildReportHtml(
 export default function ReportScreen() {
   const scheme = useColorScheme();
   const colors = scheme === "dark" ? palette.dark : palette.light;
+  const { width: screenWidth } = useWindowDimensions();
+  // content padding 16*2, card padding 12*2, card border 1*2
+  const cardWidth = screenWidth - 32 - 24 - 2;
   const { examId, studentId } = useLocalSearchParams<{ examId: string; studentId: string }>();
 
   const { data, isLoading, isError } = useQuery<Report>({
@@ -339,15 +475,13 @@ export default function ReportScreen() {
     totalRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 12, backgroundColor: colors.primary, borderTopWidth: 1, borderTopColor: colors.primary, alignItems: "center" },
     totalLabel: { fontFamily: "Poppins_700Bold", fontSize: 13, color: "#fff", flex: 1 },
     totalValue: { fontFamily: "Poppins_700Bold", fontSize: 14, color: "#fff", textAlign: "right" },
-    // Trend
-    trendCard: { backgroundColor: colors.card, borderRadius: colors.radius, borderWidth: 1, borderColor: colors.border, overflow: "hidden", marginBottom: 12 },
-    trendRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center" },
-    trendRowCurrent: { backgroundColor: colors.primary + "18" },
-    trendLabel: { fontFamily: "Poppins_500Medium", fontSize: 13, color: colors.foreground, flex: 1 },
-    trendStudentPct: { fontFamily: "Poppins_700Bold", fontSize: 13, width: 60, textAlign: "right" },
-    trendClassPct: { fontFamily: "Poppins_400Regular", fontSize: 12, color: colors.mutedForeground, width: 72, textAlign: "right" },
-    trendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-    trendCaption: { fontFamily: "Poppins_400Regular", fontSize: 11, color: colors.mutedForeground, textAlign: "center", paddingVertical: 6, paddingHorizontal: 12, borderTopWidth: 1, borderTopColor: colors.border },
+    // Trend chart
+    trendCard: { backgroundColor: colors.card, borderRadius: colors.radius, borderWidth: 1, borderColor: colors.border, overflow: "hidden", marginBottom: 12, padding: 12 },
+    trendLegend: { flexDirection: "row", gap: 20, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+    legendLine: { width: 20, height: 3, borderRadius: 2 },
+    legendDash: { width: 20, height: 0, borderTopWidth: 2, borderStyle: "dashed" },
+    legendLabel: { fontFamily: "Poppins_400Regular", fontSize: 11, color: colors.mutedForeground },
     // Comments & signing
     commentCard: { backgroundColor: colors.card, borderRadius: colors.radius, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 12 },
     commentLabel: { fontFamily: "Poppins_500Medium", fontSize: 11, color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
@@ -448,33 +582,28 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      {/* Performance trajectory */}
+      {/* Performance trajectory — line graph */}
       {hasTrend && (
         <>
           <Text style={styles.sectionTitle}>Performance Trajectory</Text>
           <View style={styles.trendCard}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, { flex: 1 }]}>Exam</Text>
-              <Text style={[styles.tableHeaderText, { width: 60, textAlign: "right" }]}>Student</Text>
-              <Text style={[styles.tableHeaderText, { width: 72, textAlign: "right" }]}>Class Avg</Text>
+            <TrendLineChart
+              rows={trendRows}
+              currentExamId={currentExamId}
+              colors={colors}
+              cardWidth={cardWidth}
+            />
+            {/* Legend */}
+            <View style={styles.trendLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendLine, { backgroundColor: colors.primary }]} />
+                <Text style={styles.legendLabel}>Student</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDash, { borderColor: "#f59e0b" }]} />
+                <Text style={styles.legendLabel}>Class Average</Text>
+              </View>
             </View>
-            {trendRows.map((e) => {
-              const isCurrent = e.examId === currentExamId;
-              const above = e.classAverage != null && e.averagePercentage >= e.classAverage;
-              return (
-                <View key={e.examId} style={[styles.trendRow, isCurrent && styles.trendRowCurrent]}>
-                  <View style={[styles.trendDot, { backgroundColor: isCurrent ? colors.primary : above ? "#10b981" : "#f59e0b" }]} />
-                  <Text style={styles.trendLabel}>T{e.term} {e.year}{isCurrent ? " ◀" : ""}</Text>
-                  <Text style={[styles.trendStudentPct, { color: above ? "#10b981" : colors.foreground }]}>
-                    {e.averagePercentage.toFixed(1)}%
-                  </Text>
-                  <Text style={styles.trendClassPct}>
-                    {e.classAverage != null ? `${e.classAverage.toFixed(1)}%` : "—"}
-                  </Text>
-                </View>
-              );
-            })}
-            <Text style={styles.trendCaption}>Green = above class average · ◀ = this exam</Text>
           </View>
         </>
       )}
