@@ -580,7 +580,9 @@ export const GetReportResponse = zod.object({
   "rank": zod.number(),
   "classSize": zod.number(),
   "teacherComment": zod.string().nullish(),
-  "principalComment": zod.string().nullish()
+  "principalComment": zod.string().nullish(),
+  "teacherSignatureData": zod.string().nullish(),
+  "principalSignatureData": zod.string().nullish()
 })
 
 
@@ -594,7 +596,9 @@ export const UpdateReportParams = zod.object({
 
 export const UpdateReportBody = zod.object({
   "teacherComment": zod.string().optional(),
-  "principalComment": zod.string().optional()
+  "principalComment": zod.string().optional(),
+  "teacherSignatureData": zod.string().nullish(),
+  "principalSignatureData": zod.string().nullish()
 })
 
 export const UpdateReportResponse = zod.object({
@@ -663,7 +667,9 @@ export const UpdateReportResponse = zod.object({
   "rank": zod.number(),
   "classSize": zod.number(),
   "teacherComment": zod.string().nullish(),
-  "principalComment": zod.string().nullish()
+  "principalComment": zod.string().nullish(),
+  "teacherSignatureData": zod.string().nullish(),
+  "principalSignatureData": zod.string().nullish()
 })
 
 

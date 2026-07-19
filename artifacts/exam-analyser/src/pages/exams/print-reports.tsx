@@ -28,6 +28,8 @@ type Report = {
   classSize: number;
   teacherComment: string | null;
   principalComment: string | null;
+  teacherSignatureData: string | null;
+  principalSignatureData: string | null;
 };
 
 function ReportCard({ report }: { report: Report }) {
@@ -118,15 +120,30 @@ function ReportCard({ report }: { report: Report }) {
           <div className="min-h-[60px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
             {report.teacherComment || "........................................................................................................"}
           </div>
+          {report.teacherSignatureData ? (
+            <div className="mt-2">
+              <img src={report.teacherSignatureData} alt="Teacher signature" className="h-14 object-contain" />
+              <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">Class Teacher</div>
+            </div>
+          ) : (
+            <div className="mt-3 text-slate-500 text-sm">Signature: .....................................</div>
+          )}
         </div>
         <div>
           <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-2">Principal's Remarks</div>
           <div className="min-h-[60px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
             {report.principalComment || "........................................................................................................"}
           </div>
-          <div className="mt-6 text-slate-800 text-sm font-bold uppercase tracking-wider text-right">
-            Signature & Stamp: ............................
-          </div>
+          {report.principalSignatureData ? (
+            <div className="mt-2">
+              <img src={report.principalSignatureData} alt="Principal signature" className="h-14 object-contain" />
+              <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">Principal</div>
+            </div>
+          ) : (
+            <div className="mt-6 text-slate-800 text-sm font-bold uppercase tracking-wider text-right">
+              Signature &amp; Stamp: ............................
+            </div>
+          )}
         </div>
       </div>
 
@@ -184,6 +201,7 @@ export default function PrintAllReports() {
       const timer = setTimeout(() => window.print(), 600);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, reports, printed]);
 
   const isFiltered = selectedIds !== null;

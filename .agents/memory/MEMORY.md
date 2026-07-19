@@ -1,3 +1,4 @@
+- [Digital Signature Feature](signature-feature.md) — per-user signatures in users table; per-report in report_comments; SignaturePad draws blue ink on canvas; report page uses direct authFetch not generated client.
 - [Expo keep-awake stale watcher](expo-keepawake-watcher.md) — after package upgrades, _tmp_N/build path goes missing; mkdir the stub to fix.
 - [Expo port constraints](expo-port.md) — Replit proxy only supports specific ports; 8081 is unavailable; use 8082 for Expo Metro.
 - [API server port split](api-server-ports.md) — main API Server workflow uses port 8000; duplicate artifact workflow uses 8080; never let them swap.

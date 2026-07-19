@@ -1,4 +1,4 @@
-import { useGetReport, useUpdateReport, getGetReportQueryKey, useGetSchool } from "@workspace/api-client-react";
+import { useGetReport, getGetReportQueryKey, useGetSchool } from "@workspace/api-client-react";
 import { Layout, Header } from "@/components/layout";
 import { useRoute } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,33 +39,61 @@ export default function StudentReport() {
   
   const [teacherComment, setTeacherComment] = useState("");
   const [principalComment, setPrincipalComment] = useState("");
+  const [storedTeacherSig, setStoredTeacherSig] = useState<string | null>(null);
+  const [storedPrincipalSig, setStoredPrincipalSig] = useState<string | null>(null);
+  const [mySignature, setMySignature] = useState<string | null>(null);
+  const [applyAsTeacher, setApplyAsTeacher] = useState(false);
+  const [applyAsPrincipal, setApplyAsPrincipal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const initRef = useRef(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const updateReport = useUpdateReport();
 
+  // Initialise fields from loaded report
   useEffect(() => {
     if (report && !initRef.current) {
       setTeacherComment(report.teacherComment || "");
       setPrincipalComment(report.principalComment || "");
+      setStoredTeacherSig((report as any).teacherSignatureData ?? null);
+      setStoredPrincipalSig((report as any).principalSignatureData ?? null);
       initRef.current = true;
     }
   }, [report]);
 
+  // Load the logged-in user's saved signature
+  useEffect(() => {
+    authFetch("/api/me")
+      .then(r => r.json())
+      .then(d => setMySignature(d.signatureData ?? null))
+      .catch(() => {});
+  }, []);
+
   const handleSaveComments = async () => {
+    setSaving(true);
     try {
-      await updateReport.mutateAsync({
-        examId,
-        studentId,
-        data: { teacherComment, principalComment }
+      const body: Record<string, unknown> = { teacherComment, principalComment };
+      if (applyAsTeacher && mySignature) body.teacherSignatureData = mySignature;
+      if (applyAsPrincipal && mySignature) body.principalSignatureData = mySignature;
+
+      const res = await authFetch(`/api/reports/${examId}/${studentId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
       });
+      if (!res.ok) throw new Error("Failed to save");
+
+      if (applyAsTeacher && mySignature) setStoredTeacherSig(mySignature);
+      if (applyAsPrincipal && mySignature) setStoredPrincipalSig(mySignature);
+
       toast({ title: "Comments saved successfully" });
-      queryClient.setQueryData(getGetReportQueryKey(examId, studentId), (old: any) => 
+      queryClient.setQueryData(getGetReportQueryKey(examId, studentId), (old: any) =>
         old ? { ...old, teacherComment, principalComment } : old
       );
-    } catch (error) {
+    } catch {
       toast({ title: "Failed to save comments", variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -118,8 +146,8 @@ export default function StudentReport() {
               <TrendingUp className="w-4 h-4 mr-2" /> View Trends
             </a>
           </Button>
-          <Button variant="outline" onClick={handleSaveComments} disabled={updateReport.isPending}>
-            {updateReport.isPending ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Comments</>}
+          <Button variant="outline" onClick={handleSaveComments} disabled={saving}>
+            {saving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Comments</>}
           </Button>
           <Button onClick={() => window.print()}>
             <Printer className="w-4 h-4 mr-2" /> Print Report
@@ -346,42 +374,111 @@ export default function StudentReport() {
             </div>
           )}
 
-          {/* Comments Section */}
-          <div className="p-6 md:px-10 py-6 border-t bg-slate-50 space-y-6 print:bg-transparent">
-            
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-2">Class Teacher's Remarks</div>
-              <div className="print:hidden">
-                <Textarea 
+          {/* Comments & Signatures Section */}
+          <div className="p-6 md:px-10 py-6 border-t bg-slate-50 space-y-8 print:bg-transparent">
+
+            {/* Class Teacher */}
+            <div className="space-y-2">
+              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Class Teacher's Remarks</div>
+              <div className="print:hidden space-y-2">
+                <Textarea
                   value={teacherComment}
                   onChange={(e) => setTeacherComment(e.target.value)}
                   placeholder="Enter remarks..."
                   className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
                   rows={3}
                 />
+                <div className="flex items-start gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="apply-teacher-sig"
+                    checked={applyAsTeacher}
+                    onChange={(e) => setApplyAsTeacher(e.target.checked)}
+                    disabled={!mySignature}
+                    className="mt-0.5 accent-blue-600"
+                  />
+                  <label htmlFor="apply-teacher-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
+                    Apply my signature as Class Teacher
+                    {!mySignature && (
+                      <a href="/settings" className="text-blue-600 ml-1 underline">
+                        (save your signature in Settings first)
+                      </a>
+                    )}
+                  </label>
+                </div>
+                {applyAsTeacher && mySignature && (
+                  <div className="ml-5">
+                    <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                  </div>
+                )}
               </div>
-              <div className="hidden print:block min-h-[60px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
+              {/* Print: text */}
+              <div className="hidden print:block min-h-[55px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
                 {teacherComment || "........................................................................................................"}
               </div>
+              {/* Print: stored signature */}
+              {storedTeacherSig ? (
+                <div className="hidden print:block mt-1">
+                  <img src={storedTeacherSig} alt="Teacher signature" className="h-14 object-contain" />
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">Class Teacher</div>
+                </div>
+              ) : (
+                <div className="hidden print:block mt-3 text-slate-500 text-sm">
+                  Signature: .......................................
+                </div>
+              )}
             </div>
 
-            <div>
-              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider mb-2">Principal's Remarks</div>
-              <div className="print:hidden">
-                <Textarea 
+            {/* Principal */}
+            <div className="space-y-2">
+              <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Principal's Remarks</div>
+              <div className="print:hidden space-y-2">
+                <Textarea
                   value={principalComment}
                   onChange={(e) => setPrincipalComment(e.target.value)}
                   placeholder="Enter remarks..."
                   className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
                   rows={3}
                 />
+                <div className="flex items-start gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="apply-principal-sig"
+                    checked={applyAsPrincipal}
+                    onChange={(e) => setApplyAsPrincipal(e.target.checked)}
+                    disabled={!mySignature}
+                    className="mt-0.5 accent-blue-600"
+                  />
+                  <label htmlFor="apply-principal-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
+                    Apply my signature as Principal
+                    {!mySignature && (
+                      <a href="/settings" className="text-blue-600 ml-1 underline">
+                        (save your signature in Settings first)
+                      </a>
+                    )}
+                  </label>
+                </div>
+                {applyAsPrincipal && mySignature && (
+                  <div className="ml-5">
+                    <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                  </div>
+                )}
               </div>
-              <div className="hidden print:block min-h-[60px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
+              {/* Print: text */}
+              <div className="hidden print:block min-h-[55px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
                 {principalComment || "........................................................................................................"}
               </div>
-              <div className="hidden print:block mt-6 text-slate-800 text-sm font-bold uppercase tracking-wider text-right">
-                Signature & Stamp: ............................
-              </div>
+              {/* Print: stored signature */}
+              {storedPrincipalSig ? (
+                <div className="hidden print:block mt-1">
+                  <img src={storedPrincipalSig} alt="Principal signature" className="h-14 object-contain" />
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">Principal</div>
+                </div>
+              ) : (
+                <div className="hidden print:block mt-4 text-slate-800 text-sm font-bold uppercase tracking-wider text-right">
+                  Signature &amp; Stamp: ............................
+                </div>
+              )}
             </div>
 
           </div>

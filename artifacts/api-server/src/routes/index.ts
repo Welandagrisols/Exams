@@ -15,6 +15,7 @@ import insightsRouter from "./insights";
 import importRouter from "./import";
 import ocrRouter from "./ocr";
 import messagesRouter from "./messages";
+import profileRouter from "./profile";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(trendsRouter);
 router.use(insightsRouter);
 router.use(ocrRouter);
 router.use(messagesRouter);
+router.use(profileRouter);
 
 export default router;

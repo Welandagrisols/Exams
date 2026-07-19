@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
-import { Calendar, GraduationCap, BarChart3 } from "lucide-react";
+import { Calendar, GraduationCap, BarChart3, PenLine } from "lucide-react";
+import { SignaturePad } from "@/components/SignaturePad";
+import { authFetch } from "@/lib/supabase";
 
 const formSchema = z.object({
   name: z.string().min(1, "School name is required"),
@@ -87,6 +89,35 @@ export default function Settings() {
   });
 
   const initialized = useRef(false);
+  const [mySignature, setMySignature] = useState<string | null>(null);
+  const [savingSignature, setSavingSignature] = useState(false);
+
+  useEffect(() => {
+    authFetch("/api/me")
+      .then(r => r.json())
+      .then(d => setMySignature(d.signatureData ?? null))
+      .catch(() => {});
+  }, []);
+
+  const handleSaveSignature = async () => {
+    setSavingSignature(true);
+    try {
+      if (!mySignature) {
+        await authFetch("/api/me/signature", { method: "DELETE" });
+      } else {
+        await authFetch("/api/me/signature", {
+          method: "PATCH",
+          body: JSON.stringify({ signatureData: mySignature }),
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      toast({ title: "Signature saved" });
+    } catch {
+      toast({ title: "Failed to save signature", variant: "destructive" });
+    } finally {
+      setSavingSignature(false);
+    }
+  };
 
   useEffect(() => {
     if (school && !initialized.current) {
@@ -279,6 +310,33 @@ export default function Settings() {
                     <span className="text-sm text-slate-600">Below Expectation — everything below BE2</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* ── My Signature ── */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PenLine className="h-5 w-5 text-primary" />
+                  My Signature
+                </CardTitle>
+                <CardDescription>
+                  Draw or upload your handwritten signature. It will appear on student reports you sign. Digital signatures are rendered in blue so they look authentic on paper.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SignaturePad
+                  value={mySignature}
+                  onChange={setMySignature}
+                />
+                <Button
+                  type="button"
+                  onClick={handleSaveSignature}
+                  disabled={savingSignature}
+                  className="px-6"
+                >
+                  {savingSignature ? "Saving…" : "Save Signature"}
+                </Button>
               </CardContent>
             </Card>
 

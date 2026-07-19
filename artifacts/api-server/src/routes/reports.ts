@@ -139,6 +139,8 @@ async function buildReport(
     classSize,
     teacherComment: comment?.teacherComment ?? null,
     principalComment: comment?.principalComment ?? null,
+    teacherSignatureData: comment?.teacherSignatureData ?? null,
+    principalSignatureData: comment?.principalSignatureData ?? null,
   };
 }
 

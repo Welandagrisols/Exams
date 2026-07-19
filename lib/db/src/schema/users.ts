@@ -6,6 +6,8 @@ export const usersTable = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
+  /** Base64 PNG data-URL of the user's drawn or uploaded signature */
+  signatureData: text("signature_data"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
