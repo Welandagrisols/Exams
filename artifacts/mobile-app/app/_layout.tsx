@@ -127,6 +127,10 @@ export default function RootLayout() {
                   name="fees/reminders"
                   options={{ title: "Fee Reminders", headerBackTitle: "Back" }}
                 />
+                <Stack.Screen
+                  name="settings"
+                  options={{ title: "Profile & Settings", headerBackTitle: "Back" }}
+                />
               </Stack>
               <StatusBar style={scheme === "dark" ? "light" : "light"} />
             </KeyboardProvider>

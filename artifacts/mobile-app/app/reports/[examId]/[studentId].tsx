@@ -1,7 +1,8 @@
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
-  useColorScheme, TouchableOpacity, Alert,
+  useColorScheme, TouchableOpacity, Alert, TextInput, Image,
 } from "react-native";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,6 +35,8 @@ type Report = {
   classSize: number;
   teacherComment: string | null;
   principalComment: string | null;
+  teacherSignatureData: string | null;
+  principalSignatureData: string | null;
 };
 
 type TrendExam = {
@@ -62,7 +65,15 @@ function rubricBg(grade: string): string {
 }
 
 // ─── HTML report builder (matches web print layout exactly) ─────────────────
-function buildReportHtml(report: Report, trendRows: TrendExam[], currentExamId: number): string {
+function buildReportHtml(
+  report: Report,
+  trendRows: TrendExam[],
+  currentExamId: number,
+  teacherComment: string,
+  principalComment: string,
+  teacherSig: string | null,
+  principalSig: string | null,
+): string {
   const hasTrend = trendRows.length > 1;
 
   const subjectRows = report.subjects.map(s => `
@@ -169,12 +180,17 @@ function buildReportHtml(report: Report, trendRows: TrendExam[], currentExamId: 
     <div style="padding:20px 32px;border-top:1px solid #e2e8f0;background:#f8fafc">
       <div style="margin-bottom:20px">
         <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Class Teacher's Remarks</div>
-        <div style="min-height:50px;border-bottom:1px dashed #94a3b8;padding-bottom:6px;font-style:italic;color:#1e293b;font-weight:500">${report.teacherComment || "&nbsp;"}</div>
+        <div style="min-height:50px;border-bottom:1px dashed #94a3b8;padding-bottom:6px;font-style:italic;color:#1e293b;font-weight:500">${teacherComment || "&nbsp;"}</div>
+        ${teacherSig
+          ? `<div style="margin-top:6px"><img src="${teacherSig}" style="height:50px;object-fit:contain;" /><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">Class Teacher</div></div>`
+          : `<div style="margin-top:8px;font-size:11px;color:#94a3b8">Signature: .......................................</div>`}
       </div>
       <div>
         <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Principal's Remarks</div>
-        <div style="min-height:50px;border-bottom:1px dashed #94a3b8;padding-bottom:6px;font-style:italic;color:#1e293b;font-weight:500">${report.principalComment || "&nbsp;"}</div>
-        <div style="margin-top:20px;text-align:right;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1e293b">Signature &amp; Stamp: ..........................</div>
+        <div style="min-height:50px;border-bottom:1px dashed #94a3b8;padding-bottom:6px;font-style:italic;color:#1e293b;font-weight:500">${principalComment || "&nbsp;"}</div>
+        ${principalSig
+          ? `<div style="margin-top:6px"><img src="${principalSig}" style="height:50px;object-fit:contain;" /><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">Principal</div></div>`
+          : `<div style="margin-top:20px;text-align:right;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#1e293b">Signature &amp; Stamp: ..........................</div>`}
       </div>
     </div>
 
@@ -219,11 +235,57 @@ export default function ReportScreen() {
   const hasTrend = trendRows.length > 1;
   const currentExamId = parseInt(examId ?? "0");
 
+  // ─── Editable comments + signatures ──────────────────────────────────────
+  const [teacherComment, setTeacherComment] = useState("");
+  const [principalComment, setPrincipalComment] = useState("");
+  const [storedTeacherSig, setStoredTeacherSig] = useState<string | null>(null);
+  const [storedPrincipalSig, setStoredPrincipalSig] = useState<string | null>(null);
+  const [mySignature, setMySignature] = useState<string | null>(null);
+  const [applyAsTeacher, setApplyAsTeacher] = useState(false);
+  const [applyAsPrincipal, setApplyAsPrincipal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setTeacherComment(data.teacherComment ?? "");
+      setPrincipalComment(data.principalComment ?? "");
+      setStoredTeacherSig(data.teacherSignatureData ?? null);
+      setStoredPrincipalSig(data.principalSignatureData ?? null);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    apiFetch<{ signatureData: string | null }>("/me")
+      .then(d => setMySignature(d.signatureData ?? null))
+      .catch(() => {});
+  }, []);
+
+  const handleSaveComments = async () => {
+    setSaving(true);
+    try {
+      const body: Record<string, unknown> = { teacherComment, principalComment };
+      if (applyAsTeacher && mySignature) body.teacherSignatureData = mySignature;
+      if (applyAsPrincipal && mySignature) body.principalSignatureData = mySignature;
+      await apiFetch(`/reports/${examId}/${studentId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      if (applyAsTeacher && mySignature) setStoredTeacherSig(mySignature);
+      if (applyAsPrincipal && mySignature) setStoredPrincipalSig(mySignature);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Saved", "Report updated successfully.");
+    } catch (err: any) {
+      Alert.alert("Error", err.message ?? "Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSharePdf = async () => {
     if (!data) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const html = buildReportHtml(data, trendRows, currentExamId);
+      const html = buildReportHtml(data, trendRows, currentExamId, teacherComment, principalComment, storedTeacherSig, storedPrincipalSig);
       const { uri } = await Print.printToFileAsync({
         html,
         base64: false,
@@ -286,11 +348,29 @@ export default function ReportScreen() {
     trendClassPct: { fontFamily: "Poppins_400Regular", fontSize: 12, color: colors.mutedForeground, width: 72, textAlign: "right" },
     trendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
     trendCaption: { fontFamily: "Poppins_400Regular", fontSize: 11, color: colors.mutedForeground, textAlign: "center", paddingVertical: 6, paddingHorizontal: 12, borderTopWidth: 1, borderTopColor: colors.border },
-    // Comments
+    // Comments & signing
     commentCard: { backgroundColor: colors.card, borderRadius: colors.radius, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 12 },
     commentLabel: { fontFamily: "Poppins_500Medium", fontSize: 11, color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
     commentText: { fontFamily: "Poppins_400Regular", fontSize: 13, color: colors.foreground, fontStyle: "italic", lineHeight: 20 },
-    // Share button
+    commentInput: {
+      fontFamily: "Poppins_400Regular", fontSize: 13, color: colors.foreground,
+      borderWidth: 1, borderColor: colors.border, borderRadius: colors.radius,
+      paddingHorizontal: 12, paddingVertical: 10, minHeight: 80,
+      textAlignVertical: "top", backgroundColor: colors.background,
+    },
+    signRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+    signCheck: {
+      width: 22, height: 22, borderRadius: 4, borderWidth: 2,
+      borderColor: colors.border, alignItems: "center", justifyContent: "center",
+    },
+    signCheckActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+    signLabel: { fontFamily: "Poppins_400Regular", fontSize: 12, color: colors.foreground, flex: 1, lineHeight: 18 },
+    sigPreview: { height: 52, width: "100%", marginTop: 8 },
+    storedSigWrap: { marginTop: 10 },
+    storedSigLabel: { fontFamily: "Poppins_400Regular", fontSize: 11, color: colors.mutedForeground, marginBottom: 4 },
+    // Save & Share buttons
+    saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#10b981", borderRadius: colors.radius, padding: 16, marginBottom: 12 },
+    saveBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#fff" },
     shareBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: colors.radius, padding: 16, marginBottom: 12 },
     shareBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#fff" },
   });
@@ -399,19 +479,86 @@ export default function ReportScreen() {
         </>
       )}
 
-      {/* Comments */}
-      {data.teacherComment && (
-        <View style={styles.commentCard}>
-          <Text style={styles.commentLabel}>Class Teacher's Remarks</Text>
-          <Text style={styles.commentText}>{data.teacherComment}</Text>
-        </View>
-      )}
-      {data.principalComment && (
-        <View style={styles.commentCard}>
-          <Text style={styles.commentLabel}>Principal's Remarks</Text>
-          <Text style={styles.commentText}>{data.principalComment}</Text>
-        </View>
-      )}
+      {/* ── Remarks & Signatures ── */}
+      <Text style={styles.sectionTitle}>Remarks &amp; Signatures</Text>
+
+      {/* Class Teacher */}
+      <View style={styles.commentCard}>
+        <Text style={styles.commentLabel}>Class Teacher's Remarks</Text>
+        <TextInput
+          style={styles.commentInput}
+          value={teacherComment}
+          onChangeText={setTeacherComment}
+          placeholder="Enter class teacher's remarks…"
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          numberOfLines={3}
+        />
+        <TouchableOpacity
+          style={styles.signRow}
+          onPress={() => mySignature && setApplyAsTeacher(v => !v)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.signCheck, applyAsTeacher && !!mySignature && styles.signCheckActive]}>
+            {applyAsTeacher && mySignature && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.signLabel, !mySignature && { color: colors.mutedForeground }]}>
+            {mySignature ? "Sign as Class Teacher" : "Sign as Class Teacher (save your signature in Settings first)"}
+          </Text>
+        </TouchableOpacity>
+        {applyAsTeacher && mySignature && (
+          <Image source={{ uri: mySignature }} style={styles.sigPreview} resizeMode="contain" />
+        )}
+        {storedTeacherSig && !applyAsTeacher && (
+          <View style={styles.storedSigWrap}>
+            <Text style={styles.storedSigLabel}>Signed ✓</Text>
+            <Image source={{ uri: storedTeacherSig }} style={styles.sigPreview} resizeMode="contain" />
+          </View>
+        )}
+      </View>
+
+      {/* Principal */}
+      <View style={styles.commentCard}>
+        <Text style={styles.commentLabel}>Principal's Remarks</Text>
+        <TextInput
+          style={styles.commentInput}
+          value={principalComment}
+          onChangeText={setPrincipalComment}
+          placeholder="Enter principal's remarks…"
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          numberOfLines={3}
+        />
+        <TouchableOpacity
+          style={styles.signRow}
+          onPress={() => mySignature && setApplyAsPrincipal(v => !v)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.signCheck, applyAsPrincipal && !!mySignature && styles.signCheckActive]}>
+            {applyAsPrincipal && mySignature && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.signLabel, !mySignature && { color: colors.mutedForeground }]}>
+            {mySignature ? "Sign as Principal" : "Sign as Principal (save your signature in Settings first)"}
+          </Text>
+        </TouchableOpacity>
+        {applyAsPrincipal && mySignature && (
+          <Image source={{ uri: mySignature }} style={styles.sigPreview} resizeMode="contain" />
+        )}
+        {storedPrincipalSig && !applyAsPrincipal && (
+          <View style={styles.storedSigWrap}>
+            <Text style={styles.storedSigLabel}>Signed ✓</Text>
+            <Image source={{ uri: storedPrincipalSig }} style={styles.sigPreview} resizeMode="contain" />
+          </View>
+        )}
+      </View>
+
+      {/* Save */}
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSaveComments} disabled={saving} activeOpacity={0.8}>
+        {saving
+          ? <ActivityIndicator color="#fff" size="small" />
+          : <><Ionicons name="save-outline" size={20} color="#fff" /><Text style={styles.saveBtnText}>Save Remarks &amp; Signature</Text></>
+        }
+      </TouchableOpacity>
 
       {/* Share as PDF */}
       <TouchableOpacity style={styles.shareBtn} onPress={handleSharePdf} activeOpacity={0.8}>

@@ -1,16 +1,26 @@
-import { Tabs } from "expo-router";
-import { useColorScheme } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import { useColorScheme, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import palette from "@/constants/colors";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
   const colors = scheme === "dark" ? palette.dark : palette.light;
+  const router = useRouter();
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => router.push("/settings")}
+            style={{ marginRight: 16 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="person-circle-outline" size={26} color={colors.navHeaderText} />
+          </TouchableOpacity>
+        ),
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
           backgroundColor: colors.tabBar,
