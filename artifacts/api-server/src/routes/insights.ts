@@ -150,7 +150,7 @@ Be direct, specific, and practical. Use simple English suitable for Kenyan teach
   req.on("close", () => { aborted = true; });
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const streamResult = await model.generateContentStream(prompt);
 
     for await (const chunk of streamResult.stream) {
