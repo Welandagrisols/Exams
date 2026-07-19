@@ -2,7 +2,7 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   RefreshControl, useColorScheme, TouchableOpacity,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +22,7 @@ type ScoreRow = {
 type ScoreData = {
   examId: number;
   examName: string;
+  classId: number;
   rows: ScoreRow[];
 };
 
@@ -40,6 +41,13 @@ export default function ScoresScreen() {
     queryFn: () => apiFetch(`/scores/${examId}`),
     enabled: !!examId,
   });
+
+  // Populate classId for permission check once data arrives
+  useEffect(() => {
+    if (data?.classId != null) {
+      setClassIdForPerms(String(data.classId));
+    }
+  }, [data?.classId]);
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -154,9 +162,13 @@ export default function ScoresScreen() {
 
   if (!data?.rows.length) {
     return (
-      <View style={[styles.container, styles.empty]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.empty, { flex: 1 }]}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
+      >
         <Text style={styles.emptyText}>No scores entered yet.</Text>
-      </View>
+      </ScrollView>
     );
   }
 

@@ -205,6 +205,12 @@ router.post("/students/:id/photo", upload.single("photo"), async (req, res): Pro
   if (isNaN(id)) { res.status(400).json({ error: "Invalid student id" }); return; }
   if (!req.file) { res.status(400).json({ error: "Photo file is required" }); return; }
 
+  // RBAC: fetch student's class, then check
+  const [_studPhoto] = await db.select({ classId: studentsTable.classId }).from(studentsTable).where(eq(studentsTable.id, id));
+  if (!_studPhoto || !canEditClass(_studPhoto.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can update photos for students in this class."); return;
+  }
+
   const base64 = req.file.buffer.toString("base64");
   const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
 
@@ -221,6 +227,12 @@ router.post("/students/:id/photo", upload.single("photo"), async (req, res): Pro
 router.delete("/students/:id/photo", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid student id" }); return; }
+
+  // RBAC: fetch student's class, then check
+  const [_studDelPhoto] = await db.select({ classId: studentsTable.classId }).from(studentsTable).where(eq(studentsTable.id, id));
+  if (!_studDelPhoto || !canEditClass(_studDelPhoto.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can remove photos for students in this class."); return;
+  }
 
   const [updated] = await db.update(studentsTable).set({ photoUrl: null }).where(eq(studentsTable.id, id)).returning({ id: studentsTable.id });
   if (!updated) { res.status(404).json({ error: "Student not found" }); return; }

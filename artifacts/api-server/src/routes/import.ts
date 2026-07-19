@@ -3,6 +3,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { eq } from "drizzle-orm";
 import { db, studentsTable, classesTable } from "@workspace/db";
+import { canEditClass, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -52,6 +53,10 @@ router.post("/students/import/confirm", async (req, res): Promise<void> => {
   if (!classId || !Array.isArray(rows)) {
     res.status(400).json({ error: "classId and rows are required" });
     return;
+  }
+  // RBAC: class teacher or staff only
+  if (!canEditClass(parseInt(classId), res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can import students into this class."); return;
   }
 
   const valid = rows.filter((r: any) => r.name && r.admissionNo);

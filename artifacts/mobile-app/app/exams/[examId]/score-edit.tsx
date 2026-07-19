@@ -2,7 +2,7 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, useColorScheme, TextInput, Alert,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,8 +53,9 @@ export default function ScoreEditScreen() {
   const [entries, setEntries] = useState<ScoreEntry[] | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Initialise entries once data arrives
-  if (data && !entries) {
+  // Initialise entries once data arrives (useEffect avoids setting state during render)
+  useEffect(() => {
+    if (!data || entries) return;
     const row = data.rows.find((r) => String(r.studentId) === studentId);
     if (row) {
       setEntries(
@@ -66,8 +67,11 @@ export default function ScoreEditScreen() {
           maxMarks: s.maxMarks,
         }))
       );
+    } else {
+      // Student has no scores yet — show empty entry list so user can add them
+      setEntries([]);
     }
-  }
+  }, [data, studentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const studentName = data?.rows.find((r) => String(r.studentId) === studentId)?.studentName ?? "";
 

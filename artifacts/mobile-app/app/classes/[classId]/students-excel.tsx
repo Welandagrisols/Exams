@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
-  TouchableOpacity, useColorScheme, Alert, FlatList,
+  TouchableOpacity, useColorScheme, Alert,
 } from "react-native";
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";

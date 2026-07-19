@@ -112,7 +112,7 @@ router.get("/scores/:examId", async (req, res): Promise<void> => {
       return { studentId: st.id, studentName: st.name, admissionNo: st.admissionNo, scores: subjectScores, total, maxTotal };
     });
 
-  res.json({ examId: exam.id, examName: exam.name, rows });
+  res.json({ examId: exam.id, examName: exam.name, classId: exam.classId, rows });
 });
 
 router.post("/scores", async (req, res): Promise<void> => {

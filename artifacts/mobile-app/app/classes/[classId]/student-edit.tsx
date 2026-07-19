@@ -2,7 +2,7 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, useColorScheme, TextInput, Alert,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,8 +37,9 @@ export default function StudentEditScreen() {
   const [form, setForm] = useState<StudentForm | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Initialise form once data arrives
-  if (student && !form) {
+  // Initialise form once data arrives (useEffect avoids setting state during render)
+  useEffect(() => {
+    if (!student || form) return;
     setForm({
       name: student.name ?? "",
       admissionNo: student.admissionNo ?? "",
@@ -50,7 +51,7 @@ export default function StudentEditScreen() {
       nationality: student.nationality ?? "",
       notes: student.notes ?? "",
     });
-  }
+  }, [student]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setField = (key: keyof StudentForm, value: string) =>
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
