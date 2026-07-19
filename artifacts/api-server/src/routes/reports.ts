@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, studentsTable, classesTable, examsTable, schoolTable, scoresTable, learningAreasTable, reportCommentsTable } from "@workspace/db";
 import { GetReportParams, UpdateReportParams, UpdateReportBody } from "@workspace/api-zod";
 import { getRubricGrade, getRubricPoints, getOverallGrade, thresholdsFromSchool } from "../lib/rubric";
+import { canEditClass, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 
@@ -209,6 +210,12 @@ router.patch("/reports/:examId/:studentId", async (req, res): Promise<void> => {
     return;
   }
   const { examId, studentId } = params.data;
+
+  // RBAC: only the class teacher or staff can add/edit report comments and signatures
+  const [_examForRbac] = await db.select({ classId: examsTable.classId }).from(examsTable).where(eq(examsTable.id, examId));
+  if (!_examForRbac || !canEditClass(_examForRbac.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can edit report comments for this exam."); return;
+  }
   const [existing] = await db.select().from(reportCommentsTable)
     .where(and(eq(reportCommentsTable.examId, examId), eq(reportCommentsTable.studentId, studentId)));
   if (existing) {

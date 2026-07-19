@@ -143,12 +143,12 @@ export default function ExamAnalytics() {
   const { data: analytics, isLoading } = useGetAnalytics(examId, { query: { enabled: !!examId, queryKey: getGetAnalyticsQueryKey(examId) } });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload && payload.length && payload[0]?.value != null) {
       return (
         <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
           <p className="font-semibold mb-1">{label}</p>
-          <p className="text-sm">Mean: <span className="font-bold">{payload[0].value.toFixed(1)}%</span></p>
-          {payload[0].payload.meanGrade && (
+          <p className="text-sm">Mean: <span className="font-bold">{Number(payload[0].value).toFixed(1)}%</span></p>
+          {payload[0].payload?.meanGrade && (
             <p className="text-sm mt-1">
               Grade: <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getRubricColor(payload[0].payload.meanGrade)}`}>{payload[0].payload.meanGrade}</span>
             </p>

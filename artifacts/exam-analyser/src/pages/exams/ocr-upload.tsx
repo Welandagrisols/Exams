@@ -67,8 +67,11 @@ export default function OcrUpload() {
       // Init editable marks
       const init: Record<string, string> = {};
       data.scores.forEach(row => {
+        // Use admissionNo as key fallback so unmatched rows (studentId = null)
+        // never share the same state slot and overwrite each other.
+        const rowKey = row.studentId != null ? String(row.studentId) : `adm-${row.admissionNo || row.studentName}`;
         row.marks.forEach(m => {
-          init[`${row.studentId}-${m.learningAreaId}`] = m.marks != null ? String(m.marks) : "";
+          init[`${rowKey}-${m.learningAreaId}`] = m.marks != null ? String(m.marks) : "";
         });
       });
       setEditedMarks(init);
@@ -224,15 +227,17 @@ export default function OcrUpload() {
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {result.scores.map(row => (
-                          <tr key={row.studentId ?? row.studentName} className={cn("hover:bg-muted/20", !row.studentId && "opacity-50")}>
+                        {result.scores.map(row => {
+                          const rowKey = row.studentId != null ? String(row.studentId) : `adm-${row.admissionNo || row.studentName}`;
+                          return (
+                          <tr key={row.admissionNo || row.studentName} className={cn("hover:bg-muted/20", !row.studentId && "opacity-50")}>
                             <td className="px-3 py-2 sticky left-0 bg-card font-medium whitespace-nowrap">
                               <div>{row.studentName}</div>
                               <div className="text-xs text-muted-foreground">{row.admissionNo}</div>
                               {!row.studentId && <div className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Not matched</div>}
                             </td>
                             {row.marks.map(m => {
-                              const key = `${row.studentId}-${m.learningAreaId}`;
+                              const key = `${rowKey}-${m.learningAreaId}`;
                               const val = editedMarks[key] ?? "";
                               const isBlank = val === "";
                               const isOver = val !== "" && parseFloat(val) > m.maxMarks;
@@ -255,7 +260,8 @@ export default function OcrUpload() {
                               );
                             })}
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

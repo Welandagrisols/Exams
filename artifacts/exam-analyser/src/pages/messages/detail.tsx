@@ -68,8 +68,11 @@ export default function MessageDetail() {
 
   const fetchMessage = () => {
     if (!msgId) return;
-    fetch(`/api/messages/${msgId}`)
-      .then(r => r.json())
+    authFetch(`/api/messages/${msgId}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`Request failed (${r.status})`);
+        return r.json();
+      })
       .then(setMessage)
       .catch(() => toast({ title: "Failed to load message", variant: "destructive" }))
       .finally(() => setLoading(false));

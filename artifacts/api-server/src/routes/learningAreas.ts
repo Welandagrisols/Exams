@@ -9,6 +9,7 @@ import {
   UpdateLearningAreaResponse,
   DeleteLearningAreaParams,
 } from "@workspace/api-zod";
+import { isStaff, forbidden, type AppLocals } from "../middlewares/rbac";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,9 @@ router.get("/learning-areas", async (_req, res): Promise<void> => {
 });
 
 router.post("/learning-areas", async (req, res): Promise<void> => {
+  if (!isStaff(res.locals as AppLocals)) {
+    forbidden(res, "Only admin/principal/deputy can add learning areas."); return;
+  }
   const parsed = CreateLearningAreaBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -33,6 +37,9 @@ router.post("/learning-areas", async (req, res): Promise<void> => {
 });
 
 router.patch("/learning-areas/:id", async (req, res): Promise<void> => {
+  if (!isStaff(res.locals as AppLocals)) {
+    forbidden(res, "Only admin/principal/deputy can edit learning areas."); return;
+  }
   const params = UpdateLearningAreaParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -52,6 +59,9 @@ router.patch("/learning-areas/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/learning-areas/:id", async (req, res): Promise<void> => {
+  if (!isStaff(res.locals as AppLocals)) {
+    forbidden(res, "Only admin/principal/deputy can delete learning areas."); return;
+  }
   const params = DeleteLearningAreaParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
