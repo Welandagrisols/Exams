@@ -1,9 +1,13 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { requireAuth } from "./middlewares/auth";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
@@ -35,6 +39,16 @@ app.use("/api", (req, res, next) => {
   return requireAuth(req, res, next);
 });
 app.use("/api", router);
+
+// In production, serve the built web app and fall back to index.html for SPA routes
+if (process.env.NODE_ENV === "production") {
+  const webDir = path.resolve(__dirname, "../../exam-analyser/dist/public");
+  app.use(express.static(webDir));
+  // SPA fallback — Express 5 requires a named wildcard segment
+  app.get("/{*path}", (_req, res) => {
+    res.sendFile(path.join(webDir, "index.html"));
+  });
+}
 
 // Global JSON error handler — must have exactly 4 params for Express to treat it as error middleware.
 // Express 5 forwards async throws here automatically; Express 4 requires next(err) in routes.
