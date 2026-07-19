@@ -2,6 +2,7 @@ import { useGetSchool, useUpdateSchool, getGetSchoolQueryKey } from "@workspace/
 import { Layout, Header } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,10 +12,15 @@ import * as z from "zod";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQueryClient } from "@tanstack/react-query";
-import { Calendar, GraduationCap, BarChart3, PenLine } from "lucide-react";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { Calendar, GraduationCap, BarChart3, PenLine, Users2, Shield } from "lucide-react";
 import { SignaturePad } from "@/components/SignaturePad";
 import { authFetch } from "@/lib/supabase";
+import { useIsStaff } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   name: z.string().min(1, "School name is required"),
@@ -48,10 +54,33 @@ const RUBRIC_GRADES = [
   { key: "rubricBe2" as const, label: "BE2", description: "Below Expectation (high)", color: "text-red-600 bg-red-50 border-red-200" },
 ];
 
+type AppUser = {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+};
+
+const ROLES = ["teacher", "admin", "principal", "deputy"] as const;
+
+const ROLE_COLORS: Record<string, string> = {
+  admin: "bg-rose-100 text-rose-700 border-rose-200",
+  principal: "bg-purple-100 text-purple-700 border-purple-200",
+  deputy: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  teacher: "bg-slate-100 text-slate-600 border-slate-200",
+};
+
+function userDisplayName(u: AppUser) {
+  const full = [u.firstName, u.lastName].filter(Boolean).join(" ");
+  return full || u.email || u.id.slice(0, 8);
+}
+
 export default function Settings() {
   const { data: school, isLoading } = useGetSchool();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isStaff = useIsStaff();
 
   const updateSchool = useUpdateSchool({
     mutation: {
@@ -347,7 +376,128 @@ export default function Settings() {
             </div>
           </form>
         </Form>
+
+        {/* ── Users & Roles ── */}
+        {isStaff && <UsersAndRoles />}
+
       </div>
     </Layout>
+  );
+}
+
+function UsersAndRoles() {
+  const { toast } = useToast();
+  const [changingId, setChangingId] = useState<string | null>(null);
+
+  const { data: users = [], isLoading, refetch } = useQuery<AppUser[]>({
+    queryKey: ["/api/users"],
+    queryFn: () => authFetch("/api/users").then(r => r.json()),
+    staleTime: 30_000,
+  });
+
+  const changeRole = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      authFetch(`/api/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      }).then(r => r.json()),
+    onSuccess: () => {
+      refetch();
+      setChangingId(null);
+      toast({ title: "Role updated successfully" });
+    },
+    onError: () => toast({ title: "Failed to update role", variant: "destructive" }),
+  });
+
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-primary" />
+          Users &amp; Roles
+        </CardTitle>
+        <CardDescription>
+          All teachers who have signed in appear here. Change a user's role to grant or restrict access.
+          The first admin must be set manually via SQL — after that, admins can promote others here.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+          </div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Users2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No users have signed in yet.</p>
+          </div>
+        ) : (
+          <div className="rounded-lg border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 font-medium">{userDisplayName(u)}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell truncate max-w-[200px]">
+                      {u.email ?? <span className="italic opacity-50">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {changingId === u.id ? (
+                        <Select
+                          defaultValue={u.role}
+                          onValueChange={role => changeRole.mutate({ userId: u.id, role })}
+                          disabled={changeRole.isPending}
+                        >
+                          <SelectTrigger className="w-36 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map(r => (
+                              <SelectItem key={r} value={r} className="text-xs capitalize">
+                                {r}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            className={cn("text-xs border capitalize cursor-pointer hover:opacity-80 transition-opacity", ROLE_COLORS[u.role] ?? ROLE_COLORS.teacher)}
+                            variant="outline"
+                            onClick={() => setChangingId(u.id)}
+                            title="Click to change role"
+                          >
+                            {u.role}
+                          </Badge>
+                          <button
+                            className="text-xs text-muted-foreground/50 hover:text-primary transition-colors"
+                            onClick={() => setChangingId(u.id)}
+                            title="Change role"
+                          >
+                            edit
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-3">
+          <strong>teacher</strong> — enters scores for assigned class only &nbsp;·&nbsp;
+          <strong>admin / principal / deputy</strong> — full access to all classes
+        </p>
+      </CardContent>
+    </Card>
   );
 }
