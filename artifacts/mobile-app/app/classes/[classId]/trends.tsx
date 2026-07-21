@@ -150,7 +150,7 @@ export default function ClassTrendsScreen() {
         const color = diff >= 0 ? colors.success : colors.destructive;
         const arrow = diff >= 0 ? "▲" : "▼";
         return (
-          <View style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: "row", alignItems: "center', gap: 6 }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text style={{ fontFamily: "Poppins_400Regular", fontSize: 12, color: colors.mutedForeground }}>
               {exams.length} exams tracked &nbsp;
               <Text style={{ color, fontFamily: "Poppins_600SemiBold" }}>

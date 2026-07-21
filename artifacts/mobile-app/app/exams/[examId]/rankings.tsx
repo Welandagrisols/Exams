@@ -276,7 +276,7 @@ export default function RankingsScreen() {
                 <Text style={styles.sendBtnText}>
                   {broadcast.isPending ? "Sending…" : "Send Results to Parents"}
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
             </View>
           ) : null
         }
