@@ -1,6 +1,6 @@
 import { pgTable, serial, integer, text, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { studentsTable } from "./students";
 import { examsTable } from "./exams";
 

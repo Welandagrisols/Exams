@@ -98,7 +98,7 @@ export default function StudentReport() {
   };
 
   // Build trend chart data from historical exams
-  const trendData = (trends?.exams ?? []).map((e: any) => ({
+  const trendData = [...(trends?.exams ?? [])].sort((a: any, b: any) => a.year !== b.year ? a.year - b.year : a.term - b.term).map((e: any) => ({
     label: `T${e.term} ${e.year}`,
     student: Math.round(e.averagePercentage * 10) / 10,
     class: e.classAverage != null ? Math.round(e.classAverage * 10) / 10 : null,

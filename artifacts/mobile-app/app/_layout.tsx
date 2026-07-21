@@ -92,6 +92,30 @@ export default function RootLayout() {
                   options={{ title: "Scan Class List", headerBackTitle: "Back" }}
                 />
                 <Stack.Screen
+                  name="classes/[classId]/students-excel"
+                  options={{ title: "Import from Excel", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="classes/[classId]/student-edit"
+                  options={{ title: "Edit Student", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="classes/[classId]/trends"
+                  options={{ title: "Class Trends", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="students/[studentId]/trends"
+                  options={{ title: "Student Trends", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="exams/[examId]/analytics"
+                  options={{ title: "Exam Analytics", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
+                  name="exams/[examId]/score-edit"
+                  options={{ title: "Edit Score", headerBackTitle: "Back" }}
+                />
+                <Stack.Screen
                   name="classes/[classId]/exams"
                   options={{ title: "Exams", headerBackTitle: "Back" }}
                 />

@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "@/lib/api";
 import palette from "@/constants/colors";
 
-type Class = { id: number; name: string; stream: string | null };
+type Class = { id: number; name: string; year: number; term: number; classTeacherName: string | null; studentCount: number };
 
 export default function ClassesScreen() {
   const scheme = useColorScheme();
@@ -100,7 +100,10 @@ export default function ClassesScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{item.name}</Text>
-            {item.stream && <Text style={styles.sub}>{item.stream}</Text>}
+            <Text style={styles.sub}>
+              {item.year} · Term {item.term} · {item.studentCount} student{item.studentCount !== 1 ? "s" : ""}
+              {item.classTeacherName ? ` · ${item.classTeacherName}` : ""}
+            </Text>
           </View>
           <View style={styles.actions}>
             {/* Trends — all teachers can view */}
