@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { authFetch } from "@/lib/supabase";
-import { useIsStaff } from "@/contexts/AuthContext";
+import { useIsStaff, useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
@@ -59,6 +59,8 @@ export default function Classes() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const isStaff = useIsStaff();
+  const { profile } = useAuth();
+  const canBulkCreate = isStaff || (profile?.assignedClassIds?.length ?? 0) > 0;
 
   // ── Users list for assign-teacher dialog ──
   const { data: users = [] } = useQuery<AppUser[]>({
@@ -142,9 +144,11 @@ export default function Classes() {
         <div className="flex justify-between items-center gap-3 flex-wrap">
           <p className="text-muted-foreground text-sm">Manage school classes and streams.</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/exams/bulk-create")} className="gap-2">
-              <Layers className="w-4 h-4" /> Bulk Create Exam
-            </Button>
+            {canBulkCreate && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/exams/bulk-create")} className="gap-2">
+                <Layers className="w-4 h-4" /> Bulk Create Exam
+              </Button>
+            )}
             {isStaff && (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>

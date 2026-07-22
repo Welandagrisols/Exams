@@ -14,6 +14,7 @@ import {
   LineChart, Line, Legend, Tooltip, ComposedChart, Area,
 } from 'recharts';
 import { authFetch } from "@/lib/supabase";
+import { useCanWrite } from "@/contexts/AuthContext";
 
 export default function StudentReport() {
   const [, params] = useRoute("/reports/:examId/:studentId");
@@ -46,6 +47,8 @@ export default function StudentReport() {
   const [applyAsPrincipal, setApplyAsPrincipal] = useState(false);
   const [saving, setSaving] = useState(false);
   const initRef = useRef(false);
+
+  const canWrite = useCanWrite((report as any)?.exam?.classId ?? null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -146,12 +149,16 @@ export default function StudentReport() {
               <TrendingUp className="w-4 h-4 mr-2" /> View Trends
             </a>
           </Button>
-          <Button variant="outline" onClick={handleSaveComments} disabled={saving}>
-            {saving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Comments</>}
-          </Button>
-          <Button onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" /> Print Report
-          </Button>
+          {canWrite && (
+            <Button variant="outline" onClick={handleSaveComments} disabled={saving}>
+              {saving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Comments</>}
+            </Button>
+          )}
+          {canWrite && (
+            <Button onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-2" /> Print Report
+            </Button>
+          )}
         </div>
 
         {/* Report Card */}
@@ -380,38 +387,44 @@ export default function StudentReport() {
             {/* Class Teacher */}
             <div className="space-y-2">
               <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Class Teacher's Remarks</div>
-              <div className="print:hidden space-y-2">
-                <Textarea
-                  value={teacherComment}
-                  onChange={(e) => setTeacherComment(e.target.value)}
-                  placeholder="Enter remarks..."
-                  className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
-                  rows={3}
-                />
-                <div className="flex items-start gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="apply-teacher-sig"
-                    checked={applyAsTeacher}
-                    onChange={(e) => setApplyAsTeacher(e.target.checked)}
-                    disabled={!mySignature}
-                    className="mt-0.5 accent-blue-600"
+              {canWrite ? (
+                <div className="print:hidden space-y-2">
+                  <Textarea
+                    value={teacherComment}
+                    onChange={(e) => setTeacherComment(e.target.value)}
+                    placeholder="Enter remarks..."
+                    className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
+                    rows={3}
                   />
-                  <label htmlFor="apply-teacher-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
-                    Apply my signature as Class Teacher
-                    {!mySignature && (
-                      <a href="/settings" className="text-blue-600 ml-1 underline">
-                        (save your signature in Settings first)
-                      </a>
-                    )}
-                  </label>
-                </div>
-                {applyAsTeacher && mySignature && (
-                  <div className="ml-5">
-                    <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                  <div className="flex items-start gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="apply-teacher-sig"
+                      checked={applyAsTeacher}
+                      onChange={(e) => setApplyAsTeacher(e.target.checked)}
+                      disabled={!mySignature}
+                      className="mt-0.5 accent-blue-600"
+                    />
+                    <label htmlFor="apply-teacher-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
+                      Apply my signature as Class Teacher
+                      {!mySignature && (
+                        <a href="/settings" className="text-blue-600 ml-1 underline">
+                          (save your signature in Settings first)
+                        </a>
+                      )}
+                    </label>
                   </div>
-                )}
-              </div>
+                  {applyAsTeacher && mySignature && (
+                    <div className="ml-5">
+                      <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="print:hidden text-sm text-slate-700 italic min-h-[48px]">
+                  {teacherComment || <span className="text-slate-400">No remarks entered.</span>}
+                </div>
+              )}
               {/* Print: text */}
               <div className="hidden print:block min-h-[55px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
                 {teacherComment || "........................................................................................................"}
@@ -432,38 +445,44 @@ export default function StudentReport() {
             {/* Principal */}
             <div className="space-y-2">
               <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Principal's Remarks</div>
-              <div className="print:hidden space-y-2">
-                <Textarea
-                  value={principalComment}
-                  onChange={(e) => setPrincipalComment(e.target.value)}
-                  placeholder="Enter remarks..."
-                  className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
-                  rows={3}
-                />
-                <div className="flex items-start gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="apply-principal-sig"
-                    checked={applyAsPrincipal}
-                    onChange={(e) => setApplyAsPrincipal(e.target.checked)}
-                    disabled={!mySignature}
-                    className="mt-0.5 accent-blue-600"
+              {canWrite ? (
+                <div className="print:hidden space-y-2">
+                  <Textarea
+                    value={principalComment}
+                    onChange={(e) => setPrincipalComment(e.target.value)}
+                    placeholder="Enter remarks..."
+                    className="bg-white border-slate-200 focus-visible:ring-slate-400 resize-none"
+                    rows={3}
                   />
-                  <label htmlFor="apply-principal-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
-                    Apply my signature as Principal
-                    {!mySignature && (
-                      <a href="/settings" className="text-blue-600 ml-1 underline">
-                        (save your signature in Settings first)
-                      </a>
-                    )}
-                  </label>
-                </div>
-                {applyAsPrincipal && mySignature && (
-                  <div className="ml-5">
-                    <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                  <div className="flex items-start gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="apply-principal-sig"
+                      checked={applyAsPrincipal}
+                      onChange={(e) => setApplyAsPrincipal(e.target.checked)}
+                      disabled={!mySignature}
+                      className="mt-0.5 accent-blue-600"
+                    />
+                    <label htmlFor="apply-principal-sig" className="text-xs text-slate-600 cursor-pointer leading-relaxed">
+                      Apply my signature as Principal
+                      {!mySignature && (
+                        <a href="/settings" className="text-blue-600 ml-1 underline">
+                          (save your signature in Settings first)
+                        </a>
+                      )}
+                    </label>
                   </div>
-                )}
-              </div>
+                  {applyAsPrincipal && mySignature && (
+                    <div className="ml-5">
+                      <img src={mySignature} alt="Your signature preview" className="h-12 object-contain" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="print:hidden text-sm text-slate-700 italic min-h-[48px]">
+                  {principalComment || <span className="text-slate-400">No remarks entered.</span>}
+                </div>
+              )}
               {/* Print: text */}
               <div className="hidden print:block min-h-[55px] border-b border-dashed border-slate-400 pb-2 text-slate-800 font-medium italic">
                 {principalComment || "........................................................................................................"}

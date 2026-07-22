@@ -10,6 +10,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, getRubricColor } from "@/lib/api";
 import palette from "@/constants/colors";
+import { usePermissions } from "@/hooks/usePermissions";
 import * as Haptics from "expo-haptics";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -26,7 +27,7 @@ type Subject = {
 
 type Report = {
   student: { name: string; admissionNo: string; className: string };
-  exam: { name: string; term: number; year: number; openingDate: string | null; closingDate: string | null };
+  exam: { name: string; term: number; year: number; classId: number; openingDate: string | null; closingDate: string | null };
   school: { name: string; address: string | null; motto: string | null; term1StartDate?: string | null; term1EndDate?: string | null; term2StartDate?: string | null; term2EndDate?: string | null; term3StartDate?: string | null; term3EndDate?: string | null };
   subjects: Subject[];
   totalMarks: number;
@@ -359,6 +360,9 @@ export default function ReportScreen() {
     queryFn: () => apiFetch(`/reports/${examId}/${studentId}`),
     enabled: !!examId && !!studentId,
   });
+
+  // Permission: class teacher of this exam's class + staff can edit/print/share
+  const { canWrite } = usePermissions(data?.exam?.classId ?? null);
 
   const { data: trends } = useQuery<TrendData>({
     queryKey: ["/trends/student", studentId],

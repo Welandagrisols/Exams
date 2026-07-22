@@ -1,4 +1,5 @@
 import { useListClasses } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Layout, Header } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,13 @@ export default function BulkCreateExam() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { data: classes, isLoading } = useListClasses();
+  const { profile } = useAuth();
+  const isStaff = ["admin", "principal", "deputy"].includes(profile?.role ?? "");
+  const assignedClassIds = profile?.assignedClassIds ?? [];
+  // Teachers only see classes they are assigned to; staff see all
+  const editableClasses = (classes ?? []).filter(c =>
+    isStaff || assignedClassIds.includes(c.id)
+  );
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<{ className: string; id: number; classId: number }[] | null>(null);
@@ -47,11 +55,11 @@ export default function BulkCreateExam() {
   });
 
   function toggleAll() {
-    if (!classes) return;
-    if (selectedIds.size === classes.length) {
+    if (!editableClasses.length) return;
+    if (selectedIds.size === editableClasses.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(classes.map(c => c.id)));
+      setSelectedIds(new Set(editableClasses.map(c => c.id)));
     }
   }
 
@@ -224,9 +232,9 @@ export default function BulkCreateExam() {
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Apply to Classes</h3>
-                  {classes && classes.length > 0 && (
+                  {editableClasses.length > 0 && (
                     <button type="button" onClick={toggleAll} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
-                      {selectedIds.size === classes.length
+                      {selectedIds.size === editableClasses.length
                         ? <><CheckSquare className="w-4 h-4" /> Deselect All</>
                         : <><Square className="w-4 h-4" /> Select All</>
                       }
@@ -238,9 +246,9 @@ export default function BulkCreateExam() {
                   <div className="space-y-2">
                     {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-14 w-full" />)}
                   </div>
-                ) : classes?.length ? (
+                ) : editableClasses.length ? (
                   <div className="space-y-2">
-                    {classes.map(cls => (
+                    {editableClasses.map(cls => (
                       <label
                         key={cls.id}
                         className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-colors ${

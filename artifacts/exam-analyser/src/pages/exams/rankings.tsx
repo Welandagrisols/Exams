@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useCallback } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useCanWrite } from "@/contexts/AuthContext";
 
 export default function ExamRankings() {
   const [, params] = useRoute("/exams/:examId/rankings");
@@ -18,6 +19,8 @@ export default function ExamRankings() {
   const { data: rankings, isLoading } = useGetRankings(examId, { query: { enabled: !!examId, queryKey: getGetRankingsQueryKey(examId) } });
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  const canWrite = useCanWrite((exam as any)?.classId);
 
   const allIds = rankings?.map(r => r.student.id) ?? [];
   const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
@@ -63,23 +66,25 @@ export default function ExamRankings() {
             <div className="text-sm text-muted-foreground">
               {selected.size > 0
                 ? <span className="font-medium text-foreground">{selected.size} student{selected.size !== 1 ? "s" : ""} selected</span>
-                : <span>Select students to print specific reports</span>
+                : <span>{canWrite ? "Select students to print specific reports" : "View reports by clicking the report icon"}</span>
               }
             </div>
-            <div className="flex items-center gap-2">
-              {selected.size > 0 && printSelectedUrl && (
-                <Button variant="outline" asChild className="gap-2">
-                  <a href={printSelectedUrl} target="_blank" rel="noopener noreferrer">
-                    <Printer className="h-4 w-4" /> Print Selected ({selected.size})
+            {canWrite && (
+              <div className="flex items-center gap-2">
+                {selected.size > 0 && printSelectedUrl && (
+                  <Button variant="outline" asChild className="gap-2">
+                    <a href={printSelectedUrl} target="_blank" rel="noopener noreferrer">
+                      <Printer className="h-4 w-4" /> Print Selected ({selected.size})
+                    </a>
+                  </Button>
+                )}
+                <Button asChild className="gap-2">
+                  <a href={printAllUrl} target="_blank" rel="noopener noreferrer">
+                    <Printer className="h-4 w-4" /> Print All Reports
                   </a>
                 </Button>
-              )}
-              <Button asChild className="gap-2">
-                <a href={printAllUrl} target="_blank" rel="noopener noreferrer">
-                  <Printer className="h-4 w-4" /> Print All Reports
-                </a>
-              </Button>
-            </div>
+              </div>
+            )}
           </div>
         )}
 

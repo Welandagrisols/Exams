@@ -95,3 +95,18 @@ export function useIsStaff(): boolean {
   const { profile } = useAuth();
   return ["admin", "principal", "deputy"].includes(profile?.role ?? "");
 }
+
+/**
+ * Returns true if the current user may perform write operations on a specific
+ * class (enter scores, edit comments, print/share reports, send messages).
+ * Staff (admin/principal/deputy) always return true.
+ * A teacher returns true only for their assigned class.
+ * Pass no classId to test staff-only access.
+ */
+export function useCanWrite(classId?: number | null): boolean {
+  const { profile } = useAuth();
+  const isStaff = ["admin", "principal", "deputy"].includes(profile?.role ?? "");
+  if (isStaff) return true;
+  if (classId == null) return false;
+  return profile?.assignedClassIds.includes(classId) ?? false;
+}
