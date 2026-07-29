@@ -1,6 +1,5 @@
 packages:
   - artifacts/*
-  - '!artifacts/mobile-app'
   - lib/*
   - lib/integrations/*
   - scripts
