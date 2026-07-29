@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "base": {
+      "android": {
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://exams--mercyxchepkorir.replit.app",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://xxcaqxycwinuquphocge.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4Y2FxeHljd2ludXF1cGhvY2dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTg1NTQsImV4cCI6MjA5NzM3NDU1NH0.I130ORd8VM0zQSisaQuwGAP8Ae7jyIWOhmYNRylK8ns"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "production": {
+      "extends": "base",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
