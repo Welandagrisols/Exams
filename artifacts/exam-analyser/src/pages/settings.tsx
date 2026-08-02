@@ -81,7 +81,7 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isStaff = useIsStaff();
-  const { profile, signOut } = useAuth();
+  const { signOut } = useAuth();
 
   const updateSchool = useUpdateSchool({
     mutation: {
@@ -381,29 +381,18 @@ export default function Settings() {
         {/* ── Users & Roles ── */}
         {isStaff && <UsersAndRoles />}
 
-        {/* ── Sign Out ── always visible, primary logout path on mobile web */}
-        <Card className="mt-8 border-red-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <LogOut className="h-4 w-4 text-red-500" />
-              Sign Out
-            </CardTitle>
-            <CardDescription>
-              Signed in as <strong>{profile?.email ?? "…"}</strong>
-              {profile?.role && profile.role !== "teacher" && (
-                <span className="ml-1 capitalize">· {profile.role}</span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* ── Sign Out ── */}
+        <Card>
+          <CardContent className="pt-6">
             <Button
-              variant="destructive"
-              onClick={async () => {
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
                 if (window.confirm("Sign out of EduMetrics?")) {
-                  await signOut();
+                  void signOut();
                 }
               }}
-              className="w-full sm:w-auto"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out

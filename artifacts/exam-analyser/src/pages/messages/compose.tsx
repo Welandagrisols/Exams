@@ -70,7 +70,7 @@ export default function ComposeMessage() {
 
   useEffect(() => {
     if (!classId) { setExams([]); return; }
-    authFetch(`/api/classes/${classId}/exams`)
+    authFetch(`/api/exams?classId=${classId}`)
       .then(r => r.json())
       .then(setExams)
       .catch(() => {});

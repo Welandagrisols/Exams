@@ -47,7 +47,7 @@ export default function ImportStudents() {
   const { toast } = useToast();
 
   const [classId, setClassId] = useState<string>("");
-  const [done, setDone] = useState<{ created: number; skipped: number } | null>(null);
+  const [done, setDone] = useState<{ created: number; updated: number; skipped: number } | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -96,7 +96,7 @@ export default function ImportStudents() {
       if (!res.ok) throw new Error((await res.json()).error);
       const result = await res.json();
       setDone(result);
-      toast({ title: `Imported ${result.created} students successfully` });
+      toast({ title: `Imported ${result.created + result.updated} students successfully` });
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
     } finally { setImporting(false); }
@@ -114,7 +114,7 @@ export default function ImportStudents() {
       if (!res.ok) throw new Error((await res.json()).error);
       const result = await res.json();
       setDone(result);
-      toast({ title: `Imported ${result.created} students successfully` });
+      toast({ title: `Imported ${result.created + result.updated} students successfully` });
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
     } finally { setScanImporting(false); }
@@ -203,7 +203,11 @@ export default function ImportStudents() {
             <CardContent className="p-8 text-center space-y-4">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
               <h2 className="text-2xl font-bold">Import Complete</h2>
-              <p className="text-muted-foreground">{done.created} students added · {done.skipped} skipped (duplicates)</p>
+              <p className="text-muted-foreground">
+                {done.created} added
+                {done.updated > 0 ? ` · ${done.updated} updated (existing admission no.)` : ""}
+                {done.skipped > 0 ? ` · ${done.skipped} skipped (error)` : ""}
+              </p>
               <div className="flex gap-3 justify-center mt-4">
                 <Button variant="outline" onClick={resetAll}>Import More</Button>
                 <Button onClick={() => navigate(`/classes/${classId}/students`)}>View Students <ArrowRight className="ml-2 h-4 w-4" /></Button>

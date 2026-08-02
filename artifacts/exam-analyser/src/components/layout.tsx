@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, MessageSquare, ChevronRight, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Settings, GraduationCap, MessageSquare, ChevronRight, LogOut, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,26 +15,28 @@ const NAV_ITEMS = [
   { href: "/classes", label: "Classes", icon: Users },
   { href: "/learning-areas", label: "Learning Areas", icon: BookOpen },
   { href: "/messages", label: "Messages", icon: MessageSquare },
+  { href: "/fees/reminders", label: "Fees", icon: Receipt },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
-  const displayName = profile
-    ? ([profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email || "User")
-    : "…";
-  const displayRole = profile?.role ?? "";
+  const displayName =
+    [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") ||
+    user?.email ||
+    "Account";
   const initials = displayName
     .split(" ")
-    .map((w: string) => w[0])
-    .join("")
+    .map(part => part[0])
+    .filter(Boolean)
     .slice(0, 2)
-    .toUpperCase() || "EM";
+    .join("")
+    .toUpperCase() || "U";
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     if (window.confirm("Sign out of EduMetrics?")) {
-      await signOut();
+      void signOut();
     }
   };
 
@@ -97,14 +99,16 @@ export function Sidebar() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-            <p className="text-xs truncate capitalize" style={{ color: SIDEBAR_SUBTEXT }}>{displayRole}</p>
+            <p className="text-xs truncate capitalize" style={{ color: SIDEBAR_SUBTEXT }}>{profile?.role ?? "…"}</p>
           </div>
           <button
+            type="button"
             onClick={handleSignOut}
             title="Sign out"
-            className="p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Sign out"
+            className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
           >
-            <LogOut className="h-4 w-4 flex-shrink-0" style={{ color: SIDEBAR_SUBTEXT }} />
+            <LogOut className="h-4 w-4" style={{ color: SIDEBAR_SUBTEXT }} />
           </button>
         </div>
       </div>

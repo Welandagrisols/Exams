@@ -29,6 +29,7 @@ import BulkCreateExam from "@/pages/exams/bulk-create";
 import MessagesList from "@/pages/messages/index";
 import ComposeMessage from "@/pages/messages/compose";
 import MessageDetail from "@/pages/messages/detail";
+import FeeReminders from "@/pages/fees/reminders";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ function AppRoutes() {
         <Route path="/messages" component={MessagesList} />
         <Route path="/messages/compose" component={ComposeMessage} />
         <Route path="/messages/:id" component={MessageDetail} />
+        <Route path="/fees/reminders" component={FeeReminders} />
         <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
       </Switch>

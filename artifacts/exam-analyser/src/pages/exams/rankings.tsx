@@ -4,12 +4,39 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useRoute, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getRubricColor } from "@/lib/utils";
-import { FileText, Trophy, TrendingUp, Printer } from "lucide-react";
+import { FileText, Trophy, TrendingUp, Printer, ShieldCheck, ShieldOff, PenLine, Send, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useCallback } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCanWrite } from "@/contexts/AuthContext";
+import { useCanWrite, useIsStaff, useIsAdmin } from "@/contexts/AuthContext";
+import { authFetch } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+
+type ExamApproval = {
+  id: number;
+  classId: number | null;
+  scoresApprovedAt: string | null;
+  approvedByName: string | null;
+};
+
+type BroadcastResult = {
+  messageId: number;
+  sent: number;
+  noPhone: number;
+  failed: number;
+  total: number;
+  smsConfigured: boolean;
+  errors?: string[];
+};
 
 export default function ExamRankings() {
   const [, params] = useRoute("/exams/:examId/rankings");
@@ -17,10 +44,93 @@ export default function ExamRankings() {
 
   const { data: exam } = useGetExam(examId, { query: { enabled: !!examId, queryKey: getGetExamQueryKey(examId) } });
   const { data: rankings, isLoading } = useGetRankings(examId, { query: { enabled: !!examId, queryKey: getGetRankingsQueryKey(examId) } });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // scoresApprovedAt/approvedByName aren't in the generated client's response
+  // schema yet, so fetch them directly — same approach the mobile app uses.
+  const { data: approval } = useQuery<ExamApproval>({
+    queryKey: ["exam-approval", examId],
+    queryFn: async () => {
+      const res = await authFetch(`/api/exams/${examId}`);
+      if (!res.ok) throw new Error("Failed to load exam");
+      return res.json();
+    },
+    enabled: !!examId,
+  });
+
+  const isStaff = useIsStaff();
+  const isAdmin = useIsAdmin();
+  const canWrite = useCanWrite(approval?.classId ?? (exam as any)?.classId);
+
+  const [signOpen, setSignOpen] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [broadcastResult, setBroadcastResult] = useState<BroadcastResult | null>(null);
+
+  const invalidateApproval = () => queryClient.invalidateQueries({ queryKey: ["exam-approval", examId] });
+
+  const approveScores = useMutation({
+    mutationFn: async () => {
+      const res = await authFetch(`/api/exams/${examId}/approve-scores`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Could not approve scores.");
+      return res.json();
+    },
+    onSuccess: () => { invalidateApproval(); toast({ title: "Scores approved" }); },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const unapproveScores = useMutation({
+    mutationFn: async () => {
+      const res = await authFetch(`/api/exams/${examId}/unapprove-scores`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Could not unapprove scores.");
+      return res.json();
+    },
+    onSuccess: () => { invalidateApproval(); toast({ title: "Scores unapproved — reopened for editing" }); },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const signAll = useMutation({
+    mutationFn: async (title: string) => {
+      const res = await authFetch(`/api/reports/${examId}/sign-all`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Could not sign reports.");
+      return res.json() as Promise<{ ok: boolean; signedCount: number }>;
+    },
+    onSuccess: (result) => {
+      setSignOpen(false);
+      setCustomTitle("");
+      toast({ title: "Signed", description: `Applied your signature to ${result.signedCount} report${result.signedCount !== 1 ? "s" : ""}.` });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const broadcast = useMutation({
+    mutationFn: async () => {
+      const res = await authFetch(`/api/messages/broadcast-results/${examId}`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Could not send results.");
+      return res.json() as Promise<BroadcastResult>;
+    },
+    onSuccess: (result) => setBroadcastResult(result),
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const handleUnapprove = () => {
+    if (window.confirm("This reopens scores for editing. You'll need to approve again before results can be sent to parents. Continue?")) {
+      unapproveScores.mutate();
+    }
+  };
+
+  const handleBroadcast = () => {
+    const count = rankings?.length ?? 0;
+    if (window.confirm(`This will send an SMS with exam results to parents of all ${count} student${count !== 1 ? "s" : ""} in this class.\n\nParents without a saved phone number will be skipped. Continue?`)) {
+      broadcast.mutate();
+    }
+  };
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
-
-  const canWrite = useCanWrite((exam as any)?.classId);
 
   const allIds = rankings?.map(r => r.student.id) ?? [];
   const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
@@ -60,6 +170,115 @@ export default function ExamRankings() {
       />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto w-full space-y-6">
+
+        {rankings && rankings.length > 0 && (isStaff || canWrite) && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  {approval?.scoresApprovedAt ? (
+                    <span className="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400 font-medium">
+                      <ShieldCheck className="h-4 w-4" />
+                      Scores approved{approval.approvedByName ? ` by ${approval.approvedByName}` : ""}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground font-medium">
+                      <ShieldOff className="h-4 w-4" />
+                      Scores not yet approved
+                    </span>
+                  )}
+                </div>
+
+                {isStaff && (
+                  approval?.scoresApprovedAt ? (
+                    <Button variant="outline" size="sm" onClick={handleUnapprove} disabled={unapproveScores.isPending} className="gap-2">
+                      {unapproveScores.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldOff className="h-4 w-4" />}
+                      Unapprove
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => approveScores.mutate()} disabled={approveScores.isPending} className="gap-2">
+                      {approveScores.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                      Approve Scores
+                    </Button>
+                  )
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {canWrite && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <PenLine className="h-4 w-4" /> Sign All Reports <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      {["Class Teacher", "Principal", "Deputy Principal"].map(title => (
+                        <DropdownMenuItem key={title} onClick={() => signAll.mutate(title)}>
+                          Sign as {title}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setSignOpen(true)}>Custom title…</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBroadcast}
+                    disabled={!approval?.scoresApprovedAt || broadcast.isPending}
+                    title={!approval?.scoresApprovedAt ? "Approve scores first" : undefined}
+                    className="gap-2"
+                  >
+                    {broadcast.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Send Results to Parents
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Dialog open={signOpen} onOpenChange={setSignOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Sign all reports</DialogTitle>
+              <DialogDescription>Enter the title to sign as (e.g. "Head of Department").</DialogDescription>
+            </DialogHeader>
+            <Input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Title" autoFocus />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSignOpen(false)}>Cancel</Button>
+              <Button disabled={!customTitle.trim() || signAll.isPending} onClick={() => signAll.mutate(customTitle.trim())} className="gap-2">
+                {signAll.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Sign as "{customTitle || "…"}"
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!broadcastResult} onOpenChange={(open) => !open && setBroadcastResult(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Results Sent</DialogTitle>
+            </DialogHeader>
+            {broadcastResult && (
+              <div className="space-y-2 text-sm">
+                {!broadcastResult.smsConfigured && (
+                  <p className="text-amber-600 dark:text-amber-400">SMS is not yet configured. Add your Africa's Talking credentials to start sending.</p>
+                )}
+                <p>Sent to <strong>{broadcastResult.sent}</strong> of {broadcastResult.total} parents.</p>
+                {broadcastResult.noPhone > 0 && <p className="text-muted-foreground">{broadcastResult.noPhone} skipped — no phone number on file.</p>}
+                {broadcastResult.failed > 0 && <p className="text-destructive">{broadcastResult.failed} failed to send.</p>}
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => setBroadcastResult(null)}>Done</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {rankings && rankings.length > 0 && (
           <div className="flex items-center justify-between gap-3">

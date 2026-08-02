@@ -1,0 +1,217 @@
+import { Layout, Header } from "@/components/layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useListClasses } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { authFetch } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
+import { Search, Receipt, Loader2 } from "lucide-react";
+
+type Candidate = {
+  id: number;
+  name: string;
+  admissionNo: string;
+  classId: number;
+  className: string | null;
+  feeBalance: string;
+  parentName: string | null;
+  parentPhone: string | null;
+  parentEmail: string | null;
+};
+
+const DEFAULT_BODY =
+  "Dear Parent/Guardian,\n\nThis is a reminder that [Student Name] has an outstanding fee balance of [Fee Balance]. Kindly clear the balance at your earliest convenience.\n\nRegards,\nSchool Administration";
+
+function formatKsh(value: string): string {
+  const n = parseFloat(value);
+  return isNaN(n) ? value : `Ksh ${n.toLocaleString("en-KE")}`;
+}
+
+export default function FeeReminders() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { data: classes } = useListClasses();
+
+  const [threshold, setThreshold] = useState("");
+  const [classId, setClassId] = useState<string>("all");
+  const [title, setTitle] = useState("Fee Balance Reminder");
+  const [body, setBody] = useState(DEFAULT_BODY);
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [sending, setSending] = useState(false);
+
+  const handleSearch = async () => {
+    const minBalance = parseFloat(threshold);
+    if (isNaN(minBalance) || minBalance <= 0) {
+      toast({ title: "Enter a valid minimum balance", variant: "destructive" });
+      return;
+    }
+    setSearching(true);
+    try {
+      const qs = new URLSearchParams({ minBalance: String(minBalance) });
+      if (classId !== "all") qs.set("classId", classId);
+      const res = await authFetch(`/api/students/fee-reminders?${qs.toString()}`);
+      if (!res.ok) throw new Error((await res.json()).error ?? "Search failed");
+      const data: Candidate[] = await res.json();
+      setCandidates(data);
+      setSelected(new Set(data.filter(c => c.parentPhone).map(c => c.id)));
+    } catch (err: any) {
+      toast({ title: "Search failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSearching(false);
+      setSearched(true);
+    }
+  };
+
+  const toggle = (id: number) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === candidates.length) setSelected(new Set());
+    else setSelected(new Set(candidates.map(c => c.id)));
+  };
+
+  const handleSend = async () => {
+    if (!title.trim() || !body.trim()) {
+      toast({ title: "Enter a subject and message", variant: "destructive" });
+      return;
+    }
+    const feeData = candidates
+      .filter(c => selected.has(c.id))
+      .map(c => ({ studentId: c.id, balance: c.feeBalance }));
+    if (feeData.length === 0) {
+      toast({ title: "Select at least one student to remind", variant: "destructive" });
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await authFetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "fee_arrears", title, body, feeData }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed to create reminder");
+      const msg = await res.json();
+      navigate(`/messages/${msg.id}`);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Layout>
+      <Header title="Fee Reminders" breadcrumbs={[{ label: "Messages", href: "/messages" }, { label: "Fee Reminders" }]} />
+      <div className="p-4 md:p-6 max-w-3xl mx-auto w-full space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Search className="h-4 w-4" /> Find students with outstanding balances</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Minimum balance (Ksh)</Label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="e.g. 5000"
+                  value={threshold}
+                  onChange={e => setThreshold(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Class (optional)</Label>
+                <Select value={classId} onValueChange={setClassId}>
+                  <SelectTrigger><SelectValue placeholder="All classes" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All classes</SelectItem>
+                    {classes?.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button onClick={handleSearch} disabled={searching} className="gap-2">
+              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              {searching ? "Searching…" : "Search"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {searched && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">
+                {candidates.length} student{candidates.length !== 1 ? "s" : ""} found
+              </CardTitle>
+              {candidates.length > 0 && (
+                <Button variant="outline" size="sm" onClick={toggleAll}>
+                  {selected.size === candidates.length ? "Deselect all" : "Select all"}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {candidates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No students match that balance threshold.</p>
+              ) : (
+                <div className="divide-y">
+                  {candidates.map(c => (
+                    <label key={c.id} className="flex items-center gap-3 py-3 cursor-pointer">
+                      <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">{c.name} <span className="text-muted-foreground font-normal text-xs">· {c.className}</span></div>
+                        <div className="text-xs text-muted-foreground">
+                          {c.parentPhone ?? "No phone on file"} · {formatKsh(c.feeBalance)}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {searched && candidates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><Receipt className="h-4 w-4" /> Reminder message</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Subject</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Message</Label>
+                <Textarea rows={6} value={body} onChange={e => setBody(e.target.value)} />
+                <p className="text-xs text-muted-foreground">
+                  Use <strong>[Student Name]</strong> and <strong>[Fee Balance]</strong> to insert each student's details.
+                </p>
+              </div>
+              <Button onClick={handleSend} disabled={sending || selected.size === 0} className="gap-2">
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
+                {sending ? "Sending…" : `Send to ${selected.size} parent${selected.size !== 1 ? "s" : ""}`}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </Layout>
+  );
+}

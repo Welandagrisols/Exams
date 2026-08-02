@@ -1,0 +1,453 @@
+import { Router, type IRouter } from "express";
+import { eq, desc, inArray, and } from "drizzle-orm";
+import {
+  db, messagesTable, messageRecipientsTable, studentsTable,
+  classesTable, examsTable, scoresTable, learningAreasTable,
+} from "@workspace/db";
+import { canEditClass, isAdmin, forbidden, type AppLocals } from "../middlewares/rbac";
+
+const router: IRouter = Router();
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0") && digits.length === 10) return "254" + digits.slice(1);
+  if (digits.startsWith("254")) return digits;
+  if (digits.startsWith("7") && digits.length === 9) return "254" + digits;
+  return digits;
+}
+
+router.get("/messages", async (req, res): Promise<void> => {
+  // Capped rather than unbounded — this list only grows over time, and the
+  // mobile app loads the full result into memory for local search. 300
+  // most-recent messages covers many months of typical single-school
+  // activity; if that's ever not enough, this is the place to add real
+  // cursor-based pagination (?before=<id>) instead of raising the cap.
+  const messages = await db
+    .select({
+      id: messagesTable.id,
+      type: messagesTable.type,
+      title: messagesTable.title,
+      body: messagesTable.body,
+      classId: messagesTable.classId,
+      examId: messagesTable.examId,
+      recipientCount: messagesTable.recipientCount,
+      createdAt: messagesTable.createdAt,
+      className: classesTable.name,
+      examName: examsTable.name,
+    })
+    .from(messagesTable)
+    .leftJoin(classesTable, eq(classesTable.id, messagesTable.classId))
+    .leftJoin(examsTable, eq(examsTable.id, messagesTable.examId))
+    .orderBy(desc(messagesTable.createdAt))
+    .limit(300);
+  res.json(messages);
+});
+
+router.get("/messages/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [message] = await db
+    .select({
+      id: messagesTable.id,
+      type: messagesTable.type,
+      title: messagesTable.title,
+      body: messagesTable.body,
+      classId: messagesTable.classId,
+      examId: messagesTable.examId,
+      recipientCount: messagesTable.recipientCount,
+      createdAt: messagesTable.createdAt,
+      className: classesTable.name,
+      examName: examsTable.name,
+    })
+    .from(messagesTable)
+    .leftJoin(classesTable, eq(classesTable.id, messagesTable.classId))
+    .leftJoin(examsTable, eq(examsTable.id, messagesTable.examId))
+    .where(eq(messagesTable.id, id));
+
+  if (!message) { res.status(404).json({ error: "Message not found" }); return; }
+
+  const recipients = await db
+    .select()
+    .from(messageRecipientsTable)
+    .where(eq(messageRecipientsTable.messageId, id))
+    .orderBy(messageRecipientsTable.studentName);
+
+  res.json({ ...message, recipients });
+});
+
+router.post("/messages", async (req, res): Promise<void> => {
+  const { type = "general", title, body, classId, examId, studentIds, feeData } = req.body;
+  if (!title || !body) { res.status(400).json({ error: "title and body are required" }); return; }
+
+  // Fee reminders are admin-only — deliberately stricter than isStaff().
+  // Principal and deputy cannot send these, only admin.
+  if (type === "fee_arrears" && !isAdmin(res.locals as AppLocals)) {
+    forbidden(res, "Only an admin can send fee reminders."); return;
+  }
+  // RBAC: only class teacher or staff can send other messages
+  if (type !== "fee_arrears" && classId != null && !canEditClass(parseInt(classId), res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can send messages for this class."); return;
+  }
+
+  let recipientRows: Array<{
+    studentId: number; studentName: string; parentName: string | null;
+    parentPhone: string | null; parentEmail: string | null; feeBalance: string | null;
+  }> = [];
+
+  if (type === "fee_arrears" && Array.isArray(feeData) && feeData.length > 0) {
+    const ids = (feeData as Array<{ studentId: number; balance: string }>)
+      .map(f => f.studentId).filter(Boolean);
+
+    if (ids.length === 0) { res.status(400).json({ error: "No matched students in feeData" }); return; }
+
+    const students = await db
+      .select({ id: studentsTable.id, name: studentsTable.name, parentName: studentsTable.parentName, parentPhone: studentsTable.parentPhone, parentEmail: studentsTable.parentEmail })
+      .from(studentsTable)
+      .where(inArray(studentsTable.id, ids));
+
+    recipientRows = (feeData as Array<{ studentId: number; balance: string }>).map(f => {
+      const student = students.find(s => s.id === f.studentId);
+      if (!student) return null;
+      return {
+        studentId: student.id,
+        studentName: student.name,
+        parentName: student.parentName ?? null,
+        parentPhone: student.parentPhone ?? null,
+        parentEmail: student.parentEmail ?? null,
+        feeBalance: f.balance ?? null,
+      };
+    }).filter(Boolean) as typeof recipientRows;
+  } else {
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      res.status(400).json({ error: "At least one recipient is required" }); return;
+    }
+
+    const students = await db
+      .select({ id: studentsTable.id, name: studentsTable.name, parentName: studentsTable.parentName, parentPhone: studentsTable.parentPhone, parentEmail: studentsTable.parentEmail })
+      .from(studentsTable)
+      .where(classId
+        ? eq(studentsTable.classId, parseInt(classId))
+        : inArray(studentsTable.id, studentIds)
+      );
+
+    const selected = students.filter(s => studentIds.includes(s.id));
+    recipientRows = selected.map(s => ({
+      studentId: s.id,
+      studentName: s.name,
+      parentName: s.parentName ?? null,
+      parentPhone: s.parentPhone ?? null,
+      parentEmail: s.parentEmail ?? null,
+      feeBalance: null,
+    }));
+  }
+
+  if (recipientRows.length === 0) {
+    res.status(400).json({ error: "No valid recipients found" }); return;
+  }
+
+  const [message] = await db
+    .insert(messagesTable)
+    .values({
+      type,
+      title,
+      body,
+      classId: classId ? parseInt(classId) : null,
+      examId: examId ? parseInt(examId) : null,
+      recipientCount: recipientRows.length,
+    })
+    .returning();
+
+  await db.insert(messageRecipientsTable).values(
+    recipientRows.map(r => ({ messageId: message.id, ...r }))
+  );
+
+  res.status(201).json(message);
+});
+
+// ─── Broadcast exam results to all parents in one call ──────────────────────
+router.post("/messages/broadcast-results/:examId", async (req, res): Promise<void> => {
+  const examId = parseInt(req.params.examId);
+  if (isNaN(examId)) { res.status(400).json({ error: "Invalid examId" }); return; }
+
+  const atApiKey = process.env.AT_API_KEY;
+  const atUsername = process.env.AT_USERNAME;
+  const smsConfigured = !!(atApiKey && atUsername);
+
+  // Load exam + class
+  const [exam] = await db
+    .select({ id: examsTable.id, name: examsTable.name, term: examsTable.term, year: examsTable.year, classId: examsTable.classId, scoresApprovedAt: examsTable.scoresApprovedAt })
+    .from(examsTable)
+    .where(eq(examsTable.id, examId));
+  if (!exam) { res.status(404).json({ error: "Exam not found" }); return; }
+
+  // RBAC: broadcasting results to parents is admin-only — the class
+  // teacher prepares and reviews results, but only admin sends them out.
+  if (!isAdmin(res.locals as AppLocals)) {
+    forbidden(res, "Only an admin can send results to parents."); return;
+  }
+  if (!exam.scoresApprovedAt) {
+    res.status(409).json({ error: "Scores for this exam haven't been approved yet. Approve them before sending results to parents." });
+    return;
+  }
+
+  // Load all students in the class
+  const students = await db
+    .select({ id: studentsTable.id, name: studentsTable.name, parentName: studentsTable.parentName, parentPhone: studentsTable.parentPhone, parentEmail: studentsTable.parentEmail })
+    .from(studentsTable)
+    .where(eq(studentsTable.classId, exam.classId));
+
+  if (students.length === 0) { res.status(400).json({ error: "No students in class" }); return; }
+
+  // Create message record
+  const title = `${exam.name} Results`;
+  const body = `[Student Name] results for ${exam.name}, Term ${exam.term} ${exam.year}`;
+
+  const [message] = await db
+    .insert(messagesTable)
+    .values({ type: "exam_results", title, body, classId: exam.classId, examId: exam.id, recipientCount: students.length })
+    .returning();
+
+  await db.insert(messageRecipientsTable).values(
+    students.map(s => ({
+      messageId: message.id,
+      studentId: s.id,
+      studentName: s.name,
+      parentName: s.parentName ?? null,
+      parentPhone: s.parentPhone ?? null,
+      parentEmail: s.parentEmail ?? null,
+      feeBalance: null,
+    }))
+  );
+
+  // If SMS not configured, return early with the created message id
+  if (!smsConfigured) {
+    res.json({ messageId: message.id, sent: 0, noPhone: 0, failed: 0, total: students.length, smsConfigured: false });
+    return;
+  }
+
+  // Load scores for all students in this exam
+  const subjects = await db
+    .select({ id: learningAreasTable.id, abbreviation: learningAreasTable.abbreviation, maxMarks: learningAreasTable.maxMarks })
+    .from(learningAreasTable)
+    .orderBy(learningAreasTable.sortOrder);
+  const subjectMap = new Map(subjects.map(s => [s.id, s]));
+
+  const allScores = await db
+    .select({ studentId: scoresTable.studentId, learningAreaId: scoresTable.learningAreaId, marks: scoresTable.marks })
+    .from(scoresTable)
+    .where(eq(scoresTable.examId, examId));
+
+  const scoresByStudent = new Map<number, Array<{ abbr: string; marks: number; maxMarks: number }>>();
+  for (const score of allScores) {
+    const subj = subjectMap.get(score.learningAreaId);
+    if (!subj) continue;
+    if (!scoresByStudent.has(score.studentId)) scoresByStudent.set(score.studentId, []);
+    scoresByStudent.get(score.studentId)!.push({ abbr: subj.abbreviation, marks: parseFloat(score.marks as unknown as string), maxMarks: subj.maxMarks });
+  }
+
+  // Send SMS to each parent
+  const results = { messageId: message.id, sent: 0, noPhone: 0, failed: 0, total: students.length, smsConfigured: true, errors: [] as string[] };
+  const atEndpoint = "https://api.africastalking.com/version1/messaging";
+  const atSenderId = process.env.AT_SENDER_ID;
+
+  const recipients = await db
+    .select()
+    .from(messageRecipientsTable)
+    .where(eq(messageRecipientsTable.messageId, message.id));
+
+  for (const recipient of recipients) {
+    if (!recipient.parentPhone) { results.noPhone++; continue; }
+
+    const scores = scoresByStudent.get(recipient.studentId) ?? [];
+    let smsText: string;
+    if (scores.length > 0) {
+      const marksStr = scores.map(s => `${s.abbr}:${s.marks}`).join(", ");
+      const total = scores.reduce((sum, s) => sum + s.marks, 0);
+      const maxTotal = scores.reduce((sum, s) => sum + s.maxMarks, 0);
+      const pct = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      smsText = `${recipient.studentName} - ${exam.name} Results\n${marksStr}\nTotal: ${total}/${maxTotal} (${pct}%)`;
+    } else {
+      smsText = `${recipient.studentName} - ${exam.name} (Term ${exam.term} ${exam.year}): No scores recorded yet.`;
+    }
+
+    const phone = `+${normalizePhone(recipient.parentPhone)}`;
+    const formBody: Record<string, string> = { username: atUsername, to: phone, message: smsText };
+    if (atSenderId) formBody.from = atSenderId;
+
+    const atController = new AbortController();
+    const atTimeout = setTimeout(() => atController.abort(), 15_000);
+    try {
+      const atRes = await fetch(atEndpoint, {
+        method: "POST",
+        headers: { apiKey: atApiKey, Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formBody).toString(),
+        signal: atController.signal,
+      });
+      const data = await atRes.json() as any;
+      const rData = data?.SMSMessageData?.Recipients?.[0];
+      if (rData?.statusCode === 101) {
+        results.sent++;
+        await db.update(messageRecipientsTable).set({ smsSentAt: new Date() }).where(eq(messageRecipientsTable.id, recipient.id));
+      } else {
+        results.failed++;
+        results.errors.push(`${recipient.studentName}: ${rData?.status ?? "Unknown"}`);
+      }
+    } catch (err: any) {
+      results.failed++;
+      results.errors.push(`${recipient.studentName}: ${err.message}`);
+    } finally {
+      clearTimeout(atTimeout);
+    }
+  }
+
+  res.json(results);
+});
+
+router.post("/messages/:id/send-sms", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const atApiKey = process.env.AT_API_KEY;
+  const atUsername = process.env.AT_USERNAME;
+  if (!atApiKey || !atUsername) {
+    res.status(503).json({ error: "SMS_NOT_CONFIGURED" }); return;
+  }
+
+  const { recipientId } = req.body;
+
+  const [message] = await db
+    .select()
+    .from(messagesTable)
+    .where(eq(messagesTable.id, id));
+  if (!message) { res.status(404).json({ error: "Message not found" }); return; }
+
+  // RBAC: only class teacher or staff can send SMS
+  if (message.classId != null && !canEditClass(message.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can send SMS for this class."); return;
+  }
+
+  const allRecipients = await db
+    .select()
+    .from(messageRecipientsTable)
+    .where(eq(messageRecipientsTable.messageId, id))
+    .orderBy(messageRecipientsTable.studentName);
+
+  const targets = recipientId
+    ? allRecipients.filter(r => r.id === recipientId && r.parentPhone)
+    : allRecipients.filter(r => r.parentPhone);
+
+  let examRecord: { name: string; term: number; year: number } | undefined;
+  let subjectMap = new Map<number, string>();
+  let scoresByStudent = new Map<number, Array<{ abbr: string; marks: number | null; maxMarks: number }>>() ;
+
+  if (message.examId) {
+    const exams = await db.select({ name: examsTable.name, term: examsTable.term, year: examsTable.year })
+      .from(examsTable).where(eq(examsTable.id, message.examId));
+    examRecord = exams[0];
+
+    const subjects = await db
+      .select({ id: learningAreasTable.id, abbreviation: learningAreasTable.abbreviation, maxMarks: learningAreasTable.maxMarks })
+      .from(learningAreasTable)
+      .orderBy(learningAreasTable.sortOrder);
+    for (const s of subjects) subjectMap.set(s.id, s.abbreviation);
+
+    const studentIds = targets.map(r => r.studentId);
+    if (studentIds.length > 0) {
+      const scores = await db
+        .select({ studentId: scoresTable.studentId, learningAreaId: scoresTable.learningAreaId, marks: scoresTable.marks })
+        .from(scoresTable)
+        .where(and(eq(scoresTable.examId, message.examId), inArray(scoresTable.studentId, studentIds)));
+
+      for (const score of scores) {
+        if (!scoresByStudent.has(score.studentId)) scoresByStudent.set(score.studentId, []);
+        const abbr = subjectMap.get(score.learningAreaId) ?? "?";
+        scoresByStudent.get(score.studentId)!.push({ abbr, marks: parseFloat(score.marks as unknown as string), maxMarks: subjects.find(s => s.id === score.learningAreaId)?.maxMarks ?? 100 });
+      }
+    }
+  }
+
+  const results = { sent: 0, failed: 0, noPhone: 0, errors: [] as string[] };
+  const atEndpoint = "https://api.africastalking.com/version1/messaging";
+  const atSenderId = process.env.AT_SENDER_ID;
+
+  for (const recipient of targets) {
+    if (!recipient.parentPhone) { results.noPhone++; continue; }
+
+    let smsText: string;
+
+    if (message.examId && scoresByStudent.has(recipient.studentId)) {
+      const scores = scoresByStudent.get(recipient.studentId)!;
+      const marksStr = scores.map(s => `${s.abbr}:${s.marks ?? "-"}`).join(", ");
+      const total = scores.reduce((sum, s) => sum + (s.marks ?? 0), 0);
+      const maxTotal = scores.reduce((sum, s) => sum + s.maxMarks, 0);
+      const pct = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      const examLabel = examRecord ? `${examRecord.name} ` : "";
+      smsText = `${recipient.studentName} - ${examLabel}Results\n${marksStr}\nTotal: ${total}/${maxTotal} (${pct}%)`;
+    } else {
+      smsText = message.body
+        .replace(/\[Student Name\]/gi, recipient.studentName)
+        .replace(/\[Fee Balance\]/gi,
+          recipient.feeBalance
+            ? `Ksh ${Number(recipient.feeBalance).toLocaleString("en-KE")}`
+            : ""
+        );
+    }
+
+    const phone = `+${normalizePhone(recipient.parentPhone)}`;
+    const formBody: Record<string, string> = {
+      username: atUsername,
+      to: phone,
+      message: smsText,
+    };
+    if (atSenderId) formBody.from = atSenderId;
+
+    const atController2 = new AbortController();
+    const atTimeout2 = setTimeout(() => atController2.abort(), 15_000);
+    try {
+      const atRes = await fetch(atEndpoint, {
+        method: "POST",
+        headers: {
+          apiKey: atApiKey,
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(formBody).toString(),
+        signal: atController2.signal,
+      });
+      const data = await atRes.json() as any;
+      const rData = data?.SMSMessageData?.Recipients?.[0];
+      if (rData?.statusCode === 101) {
+        results.sent++;
+        await db.update(messageRecipientsTable)
+          .set({ smsSentAt: new Date() })
+          .where(eq(messageRecipientsTable.id, recipient.id));
+      } else {
+        results.failed++;
+        results.errors.push(`${recipient.studentName}: ${rData?.status ?? "Unknown error"}`);
+      }
+    } catch (err: any) {
+      results.failed++;
+      results.errors.push(`${recipient.studentName}: ${err.message}`);
+    } finally {
+      clearTimeout(atTimeout2);
+    }
+  }
+
+  res.json(results);
+});
+
+router.delete("/messages/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [msg] = await db.select({ classId: messagesTable.classId }).from(messagesTable).where(eq(messagesTable.id, id));
+  if (!msg) { res.status(404).json({ error: "Message not found" }); return; }
+  // RBAC: class teacher or staff only
+  if (msg.classId != null && !canEditClass(msg.classId, res.locals as AppLocals)) {
+    forbidden(res, "Only the class teacher can delete messages for this class."); return;
+  }
+  await db.delete(messagesTable).where(eq(messagesTable.id, id));
+  res.status(204).send();
+});
+
+export default router;

@@ -96,6 +96,14 @@ export function useIsStaff(): boolean {
   return ["admin", "principal", "deputy"].includes(profile?.role ?? "");
 }
 
+/** Returns true only for the admin role — stricter than useIsStaff(), for actions
+ * (changing roles, deactivating users, broadcasting results to parents) that are
+ * deliberately not available to principal/deputy accounts. */
+export function useIsAdmin(): boolean {
+  const { profile } = useAuth();
+  return profile?.role === "admin";
+}
+
 /**
  * Returns true if the current user may perform write operations on a specific
  * class (enter scores, edit comments, print/share reports, send messages).
