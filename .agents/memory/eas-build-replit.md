@@ -38,8 +38,8 @@ execSync(`ln -sf ${SRC}/node_modules ${DEST}/node_modules`);
 const opts = { cwd: DEST };
 execSync('git init', opts);
 execSync('git config user.email "build@edumetrics.local"', opts);
-execSync('git config user.name "EduMetrics Build"', opts);
-execSync('git add -A', opts);
+execSync('git config user.name "EduMetrics Build"', opts);(
+execSync('git add -A', opts);pp ppl we LL
 execSync('git commit -m "EduMetrics EAS build"', opts);
 console.log('hash:', execSync('git rev-parse HEAD', opts).toString().trim());
 ```
