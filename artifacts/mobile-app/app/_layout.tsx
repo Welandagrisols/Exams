@@ -192,7 +192,7 @@ export default function RootLayout() {
                   options={{ title: "Profile & Settings", headerBackTitle: "Back" }}
                 />
               </Stack>
-              <StatusBar style={scheme === "dark" ? "light" : "light"} />
+              <StatusBar style={scheme === "dark" ? "light" : "dark"} />
             </KeyboardProvider>
           </AuthProvider>
         </QueryClientProvider>

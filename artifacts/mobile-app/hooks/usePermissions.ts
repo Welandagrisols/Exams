@@ -22,8 +22,13 @@ export function usePermissions(classId?: number | string | null) {
   const isAdmin = role === "admin";
 
   /** Can perform write operations on the given class (or globally if no classId given) */
+  // Compare both as numbers and as strings to handle integer IDs passed as
+  // route-param strings (e.g. "42") as well as any future string/UUID IDs.
   const canWrite = isStaff || (
-    classId != null && assignedClassIds.includes(Number(classId))
+    classId != null && (
+      assignedClassIds.includes(Number(classId)) ||
+      assignedClassIds.map(String).includes(String(classId))
+    )
   );
 
   /** Can send messages / broadcast results / manage fees for this class */

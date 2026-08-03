@@ -27,7 +27,14 @@ type Mode = "options" | "password" | "signup" | "signup_sent" | "email" | "email
  * /auth/callback handler). */
 async function completeSessionFromUrl(url: string | null) {
   if (!url) return false;
-  const params = new URLSearchParams(url.split("?")[1] ?? url.split("#")[1] ?? "");
+  // Supabase can return `code` in either the query string or the URL fragment
+  // depending on the auth flow. Split carefully so fragment chars don't bleed
+  // into query-param values (e.g. "code=abc#...").
+  const queryStr = url.includes("?")
+    ? (url.split("?")[1] ?? "").split("#")[0]
+    : "";
+  const fragmentStr = url.includes("#") ? (url.split("#")[1] ?? "") : "";
+  const params = new URLSearchParams(queryStr || fragmentStr);
   const code = params.get("code");
   if (!code) return false;
   const { error } = await supabase.auth.exchangeCodeForSession(code);

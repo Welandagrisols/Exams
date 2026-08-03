@@ -154,8 +154,8 @@ export default function LearningAreasScreen() {
                 <Text style={s.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.btn, (!name || !abbr) && { opacity: 0.5 }]}
-                disabled={!name || !abbr || create.isPending}
+                style={[s.btn, (!name || !abbr || !maxMarks || Number(maxMarks) <= 0) && { opacity: 0.5 }]}
+                disabled={!name || !abbr || !maxMarks || Number(maxMarks) <= 0 || create.isPending}
                 onPress={() => create.mutate()}
               >
                 {create.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.btnText}>Add</Text>}

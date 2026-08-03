@@ -31,7 +31,6 @@ import ComposeMessage from "@/pages/messages/compose";
 import MessageDetail from "@/pages/messages/detail";
 import FeeReminders from "@/pages/fees/reminders";
 import FeeBalances from "@/pages/fees/balances";
-import GlobalSearch from "@/pages/search";
 
 const queryClient = new QueryClient();
 
@@ -84,7 +83,6 @@ function AppRoutes() {
         <Route path="/messages/:id" component={MessageDetail} />
         <Route path="/fees/reminders" component={FeeReminders} />
         <Route path="/fees/balances" component={FeeBalances} />
-        <Route path="/search" component={GlobalSearch} />
         <Route path="/login"><Redirect to="/" /></Route>
         <Route component={NotFound} />
       </Switch>
