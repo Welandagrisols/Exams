@@ -55,6 +55,7 @@ export default function ResetPassword() {
               placeholder="New password (min 6 chars)"
               required
               minLength={6}
+              autoComplete="new-password"
               autoFocus
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors"
             />
@@ -64,6 +65,7 @@ export default function ResetPassword() {
               onChange={e => setConfirm(e.target.value)}
               placeholder="Confirm new password"
               required
+              autoComplete="new-password"
               className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors"
             />
             <button

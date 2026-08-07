@@ -9,3 +9,4 @@
 - [Mobile multipart uploads](mobile-multipart-uploads.md) — shared apiFetch forces JSON content-type; use a separate apiUpload helper (no Content-Type header) for FormData/image uploads from Expo.
 - [pnpm store mismatch](pnpm-store-mismatch.md) — avoid `pnpm add`/scoped installs mid-workspace; edit package.json + run `CI=true pnpm install --no-frozen-lockfile` from root, synchronously.
 - [tar package firewall block](tar-firewall-block.md) — Replit firewall blocks npm `tar` at ALL versions; eas-cli removed from mobile-app devDeps; use --prefer-offline for workspace install since expo is cached in pnpm store.
+- [Supabase password recovery redirects](supabase-password-recovery.md) — allow both the deployed web reset route and the `edumetrics` native reset URI in Supabase Auth settings.
