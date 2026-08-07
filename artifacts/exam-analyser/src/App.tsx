@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import AuthCallback from "@/pages/auth/callback";
+import ResetPassword from "@/pages/auth/reset-password";
 
 import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
@@ -52,6 +53,7 @@ function AppRoutes() {
   if (!user) {
     return (
       <Switch>
+        <Route path="/auth/reset-password" component={ResetPassword} />
         <Route path="/login" component={LoginPage} />
         <Route path="/auth/callback" component={AuthCallback} />
         <Route><Redirect to="/login" /></Route>
@@ -62,6 +64,7 @@ function AppRoutes() {
   return (
     <ErrorBoundary>
       <Switch>
+        <Route path="/auth/reset-password" component={ResetPassword} />
         <Route path="/" component={Dashboard} />
         <Route path="/classes" component={Classes} />
         <Route path="/classes/:classId/students" component={Students} />

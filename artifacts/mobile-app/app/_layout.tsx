@@ -29,7 +29,8 @@ function AuthGuard() {
   useEffect(() => {
     if (loading) return;
     const inAuthGroup = segments[0] === "login";
-    if (!user && !inAuthGroup) {
+    const inRecoveryGroup = segments[0] === "auth";
+    if (!user && !inAuthGroup && !inRecoveryGroup) {
       router.replace("/login");
     } else if (user && inAuthGroup) {
       router.replace("/");
@@ -78,6 +79,7 @@ export default function RootLayout() {
                 }}
               >
                 <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/reset-password" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="classes/[classId]/students"

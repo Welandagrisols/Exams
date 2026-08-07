@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-type Mode = "options" | "password" | "signup" | "email" | "email_sent" | "signup_sent";
+type Mode = "options" | "password" | "signup" | "email" | "email_sent" | "signup_sent" | "forgot" | "forgot_sent";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("options");
@@ -72,6 +72,23 @@ export default function LoginPage() {
     else { setMode("email_sent"); setLoading(false); }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      setMode("forgot_sent");
+      setLoading(false);
+    }
+  };
+
   const Logo = () => (
     <div className="flex flex-col items-center gap-2">
       <div className="w-14 h-14 rounded-full bg-[#1e3a5f] flex items-center justify-center mb-1">
@@ -124,6 +141,21 @@ export default function LoginPage() {
               Click the link in the email to log in.
             </p>
             <button onClick={reset} className="text-xs text-[#1e3a5f] underline mt-1">Use a different method</button>
+          </div>
+        )}
+
+        {mode === "forgot_sent" && (
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-800">Check your email</p>
+            <p className="text-xs text-gray-500">
+              If an account exists for <span className="font-medium text-[#1e3a5f]">{email}</span>, we sent a password reset link.
+            </p>
+            <button onClick={reset} className="text-xs text-[#1e3a5f] underline mt-1">Return to sign in</button>
           </div>
         )}
 
@@ -186,11 +218,34 @@ export default function LoginPage() {
               className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60">
               {loading ? "Signing in…" : "Sign in"}
             </button>
+            <button type="button" onClick={() => { setError(null); setMode("forgot"); }}
+              className="text-xs text-[#1e3a5f] text-center hover:underline">
+              Forgot your password?
+            </button>
             <button type="button" onClick={() => setMode("signup")}
               className="text-xs text-[#1e3a5f] text-center hover:underline">
               Don't have an account? Create one
             </button>
             <BackBtn />
+            {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+          </form>
+        )}
+
+        {mode === "forgot" && (
+          <form onSubmit={handleForgotPassword} className="flex flex-col gap-3 w-full">
+            <p className="text-sm text-gray-600 font-medium text-center">Reset your password</p>
+            <p className="text-xs text-gray-500 text-center">Enter your email and we’ll send you a secure reset link.</p>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="teacher@school.edu" required autoFocus
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-800 outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f] transition-colors" />
+            <button type="submit" disabled={loading || !email.trim()}
+              className="w-full bg-[#1e3a5f] text-white rounded-lg px-4 py-3 text-sm font-medium hover:bg-[#163050] transition-colors disabled:opacity-60">
+              {loading ? "Sending…" : "Send reset link"}
+            </button>
+            <button type="button" onClick={() => { setError(null); setMode("password"); }}
+              className="text-xs text-[#1e3a5f] text-center hover:underline">
+              Back to sign in
+            </button>
             {error && <p className="text-xs text-red-500 text-center">{error}</p>}
           </form>
         )}

@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabase";
 
 WebBrowser.maybeCompleteAuthSession();
 
-type Mode = "options" | "password" | "signup" | "signup_sent" | "email" | "email_sent";
+type Mode = "options" | "password" | "signup" | "signup_sent" | "email" | "email_sent" | "forgot" | "forgot_sent";
 
 /** Pulls a Supabase auth `code` out of a redirect URL and exchanges it for a
  * session. Used for the Google OAuth round-trip, and for links tapped from
@@ -70,6 +70,9 @@ export default function LoginScreen() {
   };
 
   const redirectTo = () => AuthSession.makeRedirectUri({ scheme: "edumetrics" });
+
+  const resetRedirectTo = () =>
+    AuthSession.makeRedirectUri({ scheme: "edumetrics", path: "auth/reset-password" });
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -157,6 +160,21 @@ export default function LoginScreen() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) return;
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: resetRedirectTo(),
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setMode("forgot_sent");
+    }
+    setLoading(false);
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -204,6 +222,21 @@ export default function LoginScreen() {
               </Text>
               <TouchableOpacity onPress={reset}>
                 <Text style={styles.linkBtn}>Use a different method</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {mode === "forgot_sent" && (
+            <View style={styles.centeredBlock}>
+              <View style={styles.checkCircle}>
+                <Text style={styles.checkMark}>✓</Text>
+              </View>
+              <Text style={styles.centeredTitle}>Check your email</Text>
+              <Text style={styles.centeredBody}>
+                If an account exists for <Text style={styles.emphasis}>{email}</Text>, we sent a password reset link.
+              </Text>
+              <TouchableOpacity onPress={reset}>
+                <Text style={styles.linkBtn}>Return to sign in</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -279,11 +312,43 @@ export default function LoginScreen() {
               >
                 {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryBtnText}>Sign in</Text>}
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setError(null); setMode("forgot"); }}>
+                <Text style={styles.linkBtnCenter}>Forgot your password?</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => setMode("signup")}>
                 <Text style={styles.linkBtnCenter}>Don't have an account? Create one</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={reset}>
                 <Text style={styles.backBtn}>← Back</Text>
+              </TouchableOpacity>
+              {error && <Text style={styles.errorText}>{error}</Text>}
+            </View>
+          )}
+
+          {mode === "forgot" && (
+            <View style={styles.formBlock}>
+              <Text style={styles.signinLabel}>Reset your password</Text>
+              <Text style={styles.helperText}>Enter your email and we’ll send you a secure reset link.</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="teacher@school.edu"
+                placeholderTextColor="#aaa"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.primaryBtn, (loading || !email.trim()) && styles.btnDisabled]}
+                onPress={handleForgotPassword}
+                disabled={loading || !email.trim()}
+                activeOpacity={0.85}
+              >
+                {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryBtnText}>Send reset link</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setError(null); setMode("password"); }}>
+                <Text style={styles.linkBtnCenter}>Back to sign in</Text>
               </TouchableOpacity>
               {error && <Text style={styles.errorText}>{error}</Text>}
             </View>
@@ -426,6 +491,14 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     color: "#555",
     textAlign: "center",
+    marginBottom: 2,
+  },
+  helperText: {
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    color: "#888",
+    textAlign: "center",
+    lineHeight: 18,
     marginBottom: 2,
   },
   input: {
