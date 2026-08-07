@@ -1,4 +1,4 @@
-{
+module.exports = {
   "expo": {
     "name": "EduMetrics Mobile",
     "slug": "mobile-app",
@@ -37,12 +37,12 @@
       "typedRoutes": true
     },
     "extra": {
-      "supabaseUrl": "https://xxcaqxycwinuquphocge.supabase.co",
-      "supabaseAnonKey": "",
+      "supabaseUrl": process.env.SUPABASE_URL,
+      "supabaseAnonKey": process.env.SUPABASE_ANON_KEY,
       "apiUrl": "",
       "eas": {
         "projectId": "51d99d34-bc07-4a3c-947b-5ecfecde34b6"
       }
     }
   }
-}
+};
