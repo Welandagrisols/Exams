@@ -37,7 +37,9 @@ export function Sidebar() {
 
   const handleSignOut = () => {
     if (window.confirm("Sign out of EduMetrics?")) {
-      void signOut();
+      void signOut().catch((error: unknown) => {
+        window.alert(error instanceof Error ? error.message : "Could not sign out. Please try again.");
+      });
     }
   };
 

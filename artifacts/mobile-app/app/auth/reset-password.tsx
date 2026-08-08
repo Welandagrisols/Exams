@@ -36,14 +36,19 @@ export default function ResetPasswordScreen() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingLink, setCheckingLink] = useState(true);
+  const [linkReady, setLinkReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
     let active = true;
     const handleUrl = async (url: string | null) => {
-      await establishRecoverySession(url);
-      if (active) setCheckingLink(false);
+      const established = await establishRecoverySession(url);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (active) {
+        setLinkReady(established || Boolean(session));
+        setCheckingLink(false);
+      }
     };
     Linking.getInitialURL().then(handleUrl).catch(() => {
       if (active) setCheckingLink(false);
@@ -86,6 +91,18 @@ export default function ResetPasswordScreen() {
       <View style={styles.centered}>
         <ActivityIndicator color={NAVY} />
         <Text style={styles.statusText}>Preparing your secure reset link…</Text>
+      </View>
+    );
+  }
+
+  if (!linkReady) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.centeredTitle}>This reset link is invalid or has expired.</Text>
+        <Text style={styles.statusText}>Request a new password reset link to continue.</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace("/login")}>
+          <Text style={styles.primaryText}>Return to sign in</Text>
+        </TouchableOpacity>
       </View>
     );
   }

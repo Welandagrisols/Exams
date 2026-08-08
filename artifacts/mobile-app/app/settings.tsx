@@ -148,7 +148,15 @@ export default function SettingsScreen() {
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: signOut },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: () => {
+          void signOut().catch((error: unknown) => {
+            Alert.alert("Sign out failed", error instanceof Error ? error.message : "Please try again.");
+          });
+        },
+      },
     ]);
   };
 

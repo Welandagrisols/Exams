@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
@@ -32,24 +32,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileRequestId = useRef(0);
 
   const fetchProfile = useCallback(async () => {
+    const requestId = ++profileRequestId.current;
+    setProfile(null);
     try {
       const data = await apiFetch<UserProfile>("/me");
-      setProfile(data);
+      if (requestId === profileRequestId.current) {
+        setProfile(data);
+      }
     } catch {
-      // API not reachable or not yet migrated — leave profile null
+      // API not reachable or not yet migrated — leave profile null. Do not
+      // retain a profile belonging to a previous session.
     }
   }, []);
 
   useEffect(() => {
-    // Supabase fires onAuthStateChange with INITIAL_SESSION immediately on
-    // subscribe, so we do NOT call fetchProfile here — doing so would trigger
-    // two concurrent profile fetches on every app start (a race condition).
+    // Read the persisted session on startup and load its profile. The auth
+    // listener below also handles INITIAL_SESSION and later sign-in events;
+    // request IDs make either ordering safe without retaining stale profile
+    // permissions.
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session) {
+        fetchProfile();
+      }
     }).catch(() => {
       setLoading(false);
     });
@@ -61,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         fetchProfile();
       } else {
+        profileRequestId.current += 1;
         setProfile(null);
       }
     });
@@ -69,7 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    profileRequestId.current += 1;
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setProfile(null);
   };
 

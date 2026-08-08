@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -33,18 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileRequestId = useRef(0);
 
   const fetchProfile = useCallback(async (token: string) => {
+    const requestId = ++profileRequestId.current;
+    setProfile(null);
     try {
       const res = await fetch(`${API_URL}/api/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
+      if (res.ok && requestId === profileRequestId.current) {
         const data: UserProfile = await res.json();
         setProfile(data);
       }
     } catch {
-      // API not reachable yet — profile stays null
+      // API not reachable yet — keep the profile empty and avoid stale
+      // permissions from a previous session.
     }
   }, []);
 
@@ -54,6 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.access_token) fetchProfile(session.access_token);
+      else {
+        profileRequestId.current += 1;
+        setProfile(null);
+      }
     }).catch(() => {
       setLoading(false);
     });
@@ -65,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.access_token) {
         fetchProfile(session.access_token);
       } else {
+        profileRequestId.current += 1;
         setProfile(null);
       }
     });
@@ -73,7 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    profileRequestId.current += 1;
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setProfile(null);
   };
 

@@ -36,8 +36,22 @@ async function completeSessionFromUrl(url: string | null) {
   const fragmentStr = url.includes("#") ? (url.split("#")[1] ?? "") : "";
   const params = new URLSearchParams(queryStr || fragmentStr);
   const code = params.get("code");
-  if (!code) return false;
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    return !error;
+  }
+
+  // Older Supabase email links return the session in the fragment instead of
+  // an authorization code. Handle both formats so confirmation and magic-link
+  // sign-in work from a cold start as well as an already-open app.
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (!accessToken || !refreshToken) return false;
+
+  const { error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
   return !error;
 }
 
@@ -118,9 +132,11 @@ export default function LoginScreen() {
         setError(error.message);
       }
       setLoading(false);
+      return;
     }
     // On success, AuthContext's onAuthStateChange listener picks up the new
     // session and the app navigates away from this screen automatically.
+    setLoading(false);
   };
 
   const handleSignUp = async () => {
