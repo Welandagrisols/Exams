@@ -20,7 +20,7 @@ const SIGNATURE_HTML = `<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;background:#fff}
-canvas{display:block;touch-action:none}
+canvas{display:block;width:100%;height:180px;touch-action:none;user-select:none;-webkit-user-select:none}
 .hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   color:#94a3b8;font-size:14px;font-family:sans-serif;pointer-events:none;white-space:nowrap}
 .bar{display:flex;gap:8px;padding:10px 12px;background:#f8fafc;border-top:1px solid #e2e8f0}
@@ -40,32 +40,47 @@ button{flex:1;padding:11px;border:none;border-radius:8px;font-size:14px;font-wei
 </div>
 <script>
 var c=document.getElementById('c'),ctx=c.getContext('2d'),h=document.getElementById('h');
-var dpr=window.devicePixelRatio||1,drawing=false,hasDrawing=false,lx,ly;
+var dpr=window.devicePixelRatio||1,drawing=false,hasDrawing=false,lx=0,ly=0,activePointerId=null;
 function resize(){
   var w=window.innerWidth,ht=180;
   c.width=w*dpr; c.height=ht*dpr;
   c.style.width=w+'px'; c.style.height=ht+'px';
-  ctx.scale(dpr,dpr);
+  // Always draw in CSS-pixel coordinates while keeping a sharp bitmap.
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=2.5;ctx.strokeStyle='#1a56db';
 }
 resize();
-function pos(e){var r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return[t.clientX-r.left,t.clientY-r.top]}
-function start(e){e.preventDefault();drawing=true;var p=pos(e);lx=p[0];ly=p[1];h.style.display='none'}
-function move(e){
-  e.preventDefault();if(!drawing)return;
+function pos(e){var r=c.getBoundingClientRect();return[(e.clientX-r.left)*(c.width/dpr/r.width), (e.clientY-r.top)*(c.height/dpr/r.height)]}
+function start(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.preventDefault();
+  activePointerId=e.pointerId;
+  if(c.setPointerCapture)c.setPointerCapture(e.pointerId);
+  drawing=true;var p=pos(e);lx=p[0];ly=p[1];h.style.display='none';
+}
+function segment(e){
   var p=pos(e);
-  ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p[0],p[1]);
-  ctx.strokeStyle='#1a56db';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+  ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p[0],p[1]);ctx.stroke();
   lx=p[0];ly=p[1];hasDrawing=true;
 }
-function end(){drawing=false}
+function move(e){
+  if(!drawing||e.pointerId!==activePointerId)return;
+  e.preventDefault();
+  var points=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+  for(var i=0;i<points.length;i++)segment(points[i]);
+}
+function end(e){
+  if(e&&e.pointerId!==activePointerId)return;
+  drawing=false;
+  if(e&&c.releasePointerCapture&&c.hasPointerCapture&&c.hasPointerCapture(e.pointerId))c.releasePointerCapture(e.pointerId);
+  activePointerId=null;
+}
 function clr(){ctx.clearRect(0,0,c.width/dpr,c.height/dpr);hasDrawing=false;h.style.display='';window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'clear'}))}
 function sav(){if(!hasDrawing)return;window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'save',data:c.toDataURL('image/png')}))}
-c.addEventListener('touchstart',start,{passive:false});
-c.addEventListener('touchmove',move,{passive:false});
-c.addEventListener('touchend',end);
-c.addEventListener('mousedown',start);
-c.addEventListener('mousemove',move);
-c.addEventListener('mouseup',end);
+c.addEventListener('pointerdown',start,{passive:false});
+c.addEventListener('pointermove',move,{passive:false});
+c.addEventListener('pointerup',end,{passive:false});
+c.addEventListener('pointercancel',end,{passive:false});
 </script>
 </body>
 </html>`;
